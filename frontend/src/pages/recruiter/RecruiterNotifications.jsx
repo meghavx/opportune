@@ -24,7 +24,7 @@ import Button from '../../components/Button'
 import EmptyState from '../../components/EmptyState'
 import SkeletonLoader from '../../components/SkeletonLoader'
 import { getRecruiterNotifications } from '../../services/recruiterService'
-import { markNotificationRead, deleteNotification } from '../../services/notificationService'
+import { markNotificationRead } from '../../services/notificationService'
 import { useNotification } from '../../hooks/useNotification'
 
 const TYPE_ICONS = {
