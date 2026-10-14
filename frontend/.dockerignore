@@ -1,0 +1,15 @@
+node_modules/
+dist/
+.git/
+**/.git/
+.env
+.env.*
+**/.env
+**/.env.*
+.idea/
+.vscode/
+*.iml
+*.swp
+*.swo
+.DS_Store
+**/.DS_Store
