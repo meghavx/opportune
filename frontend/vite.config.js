@@ -1,7 +1,7 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
-// Vite configuration for the Placement Management System frontend.
+// Vite configuration for the frontend.
 export default defineConfig({
   plugins: [react()],
   server: {

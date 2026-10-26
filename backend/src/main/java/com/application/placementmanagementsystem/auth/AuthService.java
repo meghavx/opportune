@@ -36,6 +36,9 @@ public class AuthService {
     @Value("${app.mail.frontend-url}")
     private String frontendUrl;
 
+    @Value("${app.name}")
+    private String appName;
+
     private User getAuthenticatedUser() {
         CustomUserPrincipal principal =
                 (CustomUserPrincipal) SecurityContextHolder
@@ -132,7 +135,7 @@ public class AuthService {
                 + "/reset-password?token="
                 + token;
 
-        String subject = "Reset your PMS password";
+        String subject = "Reset your %s password".formatted(appName);
 
         String body = """
             Hello %s,
@@ -147,10 +150,11 @@ public class AuthService {
 
             If you did not request a password reset, you can ignore this email.
 
-            Placement Management System
+            %s
             """.formatted(
                 user.getFullName(),
-                resetLink
+                resetLink,
+                appName
         );
 
         emailService.sendEmail(

@@ -1,4 +1,4 @@
-/** Tailwind CSS configuration for the Placement Management System. */
+/** Tailwind CSS configuration for the frontend. */
 export default {
   content: ['./index.html', './src/**/*.{js,jsx}'],
   theme: {

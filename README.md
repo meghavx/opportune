@@ -1,4 +1,4 @@
-# College Placement Management System (PMS)
+# Opportune
 
 A full-stack web application designed to **centralize and streamline campus placement activities within an institution**. The system connects students, recruiters, placement administrators, and super administrators through a secure, role-based platform.
 

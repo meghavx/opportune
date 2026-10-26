@@ -14,6 +14,7 @@ import { ROLE_HOME_ROUTE } from '../../routes/sidebarMenus'
 import { ROLES } from '../../constants/roles'
 import { ROUTES } from '../../constants/routes'
 import { validateRequired } from '../../utils/validators'
+import { APP_NAME } from '../../config/appConfig'
 
 const ROLE_OPTIONS = [
   { label: 'Placement Admin', value: ROLES.PLACEMENT_ADMIN },
@@ -89,7 +90,7 @@ export default function LoginCard() {
         </span>
 
         <h1 className="text-xl font-semibold text-gray-900">
-          College Placement Management Portal
+          {APP_NAME}
         </h1>
 
         <p className="text-sm text-slate-500">

@@ -6,6 +6,7 @@ import {
 } from 'lucide-react'
 
 import LoginCard from '../../components/auth/LoginCard'
+import { APP_NAME } from '../../config/appConfig'
 
 export default function LandingPage() {
   return (
@@ -35,7 +36,7 @@ export default function LandingPage() {
 
             <span className="text-xs font-semibold uppercase tracking-[0.2em] text-[#42E886]">
 
-              COLLEGE PLACEMENT MANAGEMENT SYSTEM
+              {APP_NAME.toUpperCase()}
 
             </span>
 
@@ -111,7 +112,7 @@ export default function LandingPage() {
 
         {/* RIGHT */}
 
-        <div className="relative">
+        <div className="relative w-full max-w-md shrink-0">
 
           <div className="absolute -inset-6 rounded-[40px] bg-[#42E886]/10 blur-2xl" />
 
