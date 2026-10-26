@@ -57,7 +57,9 @@ services:
       SUPER_ADMIN_PASSWORD: ${SUPER_ADMIN_PASSWORD:?Set SUPER_ADMIN_PASSWORD}
       MAIL_FROM: ${MAIL_FROM:-noreply@opportune.local}
       FRONTEND_URL: ${FRONTEND_URL:-http://localhost:5173}
-    
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-default}
+      DEMO_USER_PASSWORD: ${DEMO_USER_PASSWORD:-}
+      
     # Expose the API only to the local machine
     ports:
       - "127.0.0.1:8080:8080"

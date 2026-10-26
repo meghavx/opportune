@@ -200,9 +200,92 @@ placement-management-system/
 
 ## How to Run
 
-### Prerequisites
+Choose **one** of the following setup methods:
 
-Make sure the following are installed:
+- **Docker:** Compose runs MySQL, the backend, and the frontend. Follow the Docker steps only; skip the manual setup steps.
+- **Manual:** Run MySQL, the backend, and the frontend directly on your machine.
+
+### Option A: Run with Docker
+
+#### Prerequisites
+
+* Docker Desktop or Docker Engine with the Docker Compose plugin
+
+#### 1. Clone the repository and enter its directory:
+
+```bash
+git clone <repository-url>
+cd placement-management-system
+```
+
+#### 2. Create a local environment file and set the required values:
+
+```bash
+cp .env.example .env
+```
+
+Set the database, email, JWT, and super-admin values in `.env`. 
+
+#### 3. Build and start the application:
+
+```bash
+docker compose up --build -d
+```
+
+Compose starts MySQL and the application services. **You do not need to install or configure MySQL, Java, Maven, Node.js, or npm separately for this method.**
+
+The frontend is available at [http://localhost:5173](http://localhost:5173), and the backend API is available at [http://localhost:8080](http://localhost:8080).
+
+> Follow the service logs:
+
+```bash
+docker compose logs -f
+```
+
+#### 4. Stop the containers while keeping the database data:
+
+```bash
+docker compose down
+```
+
+#### Run with Demo Data
+
+1. Set `DEMO_USER_PASSWORD` in `.env`. This password is shared by the seeded placement admin, recruiters, and students. Use a local-only password; do not commit it or use it outside local development.
+
+2. Start Compose with the Spring `demo` profile enabled:
+
+    ```bash
+    SPRING_PROFILES_ACTIVE=demo docker compose up --build -d
+    ```
+
+    The demo profile creates sample companies, recruiters, students, drives, eligibility criteria, applications, resumes, and recruitment activities. It creates missing demo records on startup and avoids duplicating existing ones.
+
+3. Demo Data:
+    
+    Demo accounts use the password configured in `DEMO_USER_PASSWORD`:
+
+    * **Placement Admin:** 
+        * `demo.admin@opportune.local`
+    * **Recruiters:**
+        * `kanan@northstar-demo.local`
+        * `mira@bluepeak-demo.local`
+        * `dev@cedarlabs-demo.local`
+        * `isha@meridian-demo.local`
+        * `manan@harbor-demo.local`
+    * **Students:** 
+        * `demo.student1@opportune.local` through `demo.student8@opportune.local`
+
+4. MySQL data is stored in a Docker volume and persists when containers are stopped or recreated. To permanently remove the local database and all its data:
+
+    ```bash
+    docker compose down -v
+    ```
+
+5. The next startup with the `demo` profile will seed the demo data again.
+
+### Option B: Run Manually
+
+#### Prerequisites
 
 * Java 21
 * Maven
@@ -210,33 +293,45 @@ Make sure the following are installed:
 * MySQL
 * Git
 
-### 1. Clone the Repository
+#### 1. Clone the repository and enter its directory:
 
 ```bash
 git clone <repository-url>
 cd placement-management-system
 ```
 
-### 2. Configure MySQL
+#### 2. Configure MySQL and backend environment
 
-Create a MySQL database for the application.
+Start your local MySQL server, then connect as a MySQL administrator and create a database and application user:
 
-The backend configuration uses environment variables for database connectivity. Configure the required database properties in your local environment or backend configuration.
+```sql
+CREATE DATABASE opportune;
 
-Example:
+CREATE USER 'opportune_user'@'localhost'
+IDENTIFIED BY 'replace-with-a-local-password';
 
-```env
-DB_URL=jdbc:mysql://localhost:3306/pms_db?createDatabaseIfNotExist=true
-DB_NAME=pms_db
-DB_USERNAME=your_mysql_username
-DB_PASSWORD=your_mysql_password
+GRANT ALL PRIVILEGES ON opportune.* TO 'opportune_user'@'localhost';
 ```
 
-> Do not commit passwords, JWT secrets, or other sensitive credentials to the repository.
+From the repository root, copy the backend environment example:
 
-### 3. Run the Backend
+```bash
+cp backend/.env.example backend/.env
+```
 
-Navigate to the backend directory:
+Edit `backend/.env` and set the database connection values:
+
+```env
+DB_URL=jdbc:mysql://localhost:3306/opportune
+DB_USERNAME=opportune_user
+DB_PASSWORD=replace-with-a-local-password
+```
+
+Configure any other required values in `backend/.env`, including the JWT secret, super-admin credentials, and mail settings. Keep this file local; do not commit it.
+
+#### 3. Run the Backend
+
+From the repository root, navigate to the backend directory:
 
 ```bash
 cd backend
@@ -245,13 +340,13 @@ cd backend
 Build and run the Spring Boot application:
 
 ```bash
-mvn clean install
-mvn spring-boot:run
+./mvnw clean install
+./mvnw spring-boot:run
 ```
 
-### 4. Run the Frontend
+#### 4. Run the Frontend
 
-Open another terminal and navigate to the frontend:
+In another terminal, from the repository root, navigate to the frontend directory:
 
 ```bash
 cd frontend
@@ -259,7 +354,7 @@ npm install
 npm run dev
 ```
 
-The frontend will start using the development server configured by the project.
+Open the URL printed by the frontend development server.
 
 ## Authentication & Security
 
@@ -321,7 +416,6 @@ Potential future improvements include:
 ## Team
 
 Developed as a team project as part of the **PG Certificate Programme in Advanced Computing (PGCP-AC), C-DAC Bangalore**.
-
 
 ## License
 
