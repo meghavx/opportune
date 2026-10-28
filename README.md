@@ -11,12 +11,8 @@ The system is designed with a **modular and scalable architecture**, allowing th
 <table>
   <tr>
     <td>
-          <img width="1440" height="900" alt="1" 
-            src="https://github.com/user-attachments/assets/b44bcbd9-f053-4de8-91b4-4cef620011fe" />
-    </td>
-    <td>
-          <img width="1440" height="900" alt="2" 
-            src="https://github.com/user-attachments/assets/89edfac6-bb67-48e9-a361-0b098a97055d" />
+      <img width="1440" height="812" alt="Landing Page" 
+        src="https://github.com/user-attachments/assets/ecbf260c-8e5b-40ce-82dd-5c0c95de3906" />
     </td>
   </tr>
 </table>
@@ -232,11 +228,13 @@ Set the database, email, JWT, and super-admin values in `.env`.
 docker compose up --build -d
 ```
 
-Compose starts MySQL and the application services. **You do not need to install or configure MySQL, Java, Maven, Node.js, or npm separately for this method.**
+Compose starts MySQL and the application services. 
 
-The frontend is available at [http://localhost:5173](http://localhost:5173), and the backend API is available at [http://localhost:8080](http://localhost:8080).
+The frontend will be available at [http://localhost:5173](http://localhost:5173), and the backend API, at [http://localhost:8080](http://localhost:8080).
 
-> Follow the service logs:
+> You do not need to install or configure MySQL, Java, Maven, Node.js, or npm separately for this method.
+
+##### To follow the service logs:
 
 ```bash
 docker compose logs -f
@@ -356,49 +354,15 @@ npm run dev
 
 Open the URL printed by the frontend development server.
 
-## Authentication & Security
-
-The application uses **JWT-based stateless authentication** with Spring Security.
-
-The authentication flow is:
-
-```text
-User Login
-    ↓
-Credential Verification
-    ↓
-JWT Token Generation
-    ↓
-Token Sent with Subsequent Requests
-    ↓
-JWT Validation
-    ↓
-Role-Based Authorization
-    ↓
-Protected Resource
-```
-
-Passwords are securely stored using BCrypt hashing, while protected APIs require valid authentication and appropriate role permissions.
-
 ## API Documentation
 
 The backend exposes RESTful APIs for communication between the React frontend and Spring Boot backend.
 
 API testing and development can be performed using **Postman**. The project also includes **Swagger/OpenAPI** support.
 
-## Development
+When running the application, Swagger UI is available at: 
 
-The project follows these architectural principles:
-
-* Layered backend architecture
-* RESTful API design
-* DTO-based API communication
-* Centralized exception handling
-* Backend validation
-* JWT authentication
-* Role-Based Access Control (RBAC)
-* Normalized relational database design
-* Modular and maintainable components
+http://localhost:8080/swagger-ui/index.html
 
 ## Future Enhancements
 
