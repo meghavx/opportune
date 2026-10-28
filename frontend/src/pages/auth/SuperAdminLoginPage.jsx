@@ -12,6 +12,7 @@ import { ROUTES } from '../../constants/routes'
 import { ROLE_HOME_ROUTE } from '../../routes/sidebarMenus'
 import { ROLES } from '../../constants/roles'
 import { validateRequired } from '../../utils/validators'
+import { APP_NAME } from '../../config/appConfig'
 
 export default function SuperAdminLoginPage() {
   const { login } = useAuth()
@@ -77,7 +78,7 @@ export default function SuperAdminLoginPage() {
           </span>
 
           <h1 className="text-xl font-semibold text-gray-900">
-            College Placement Management Portal
+            {APP_NAME}
           </h1>
 
           <p className="text-sm text-gray-500">

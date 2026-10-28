@@ -1,4 +1,4 @@
-# College Placement Management System (PMS)
+# Opportune
 
 A full-stack web application designed to **centralize and streamline campus placement activities within an institution**. The system connects students, recruiters, placement administrators, and super administrators through a secure, role-based platform.
 
@@ -11,12 +11,8 @@ The system is designed with a **modular and scalable architecture**, allowing th
 <table>
   <tr>
     <td>
-          <img width="1440" height="900" alt="1" 
-            src="https://github.com/user-attachments/assets/b44bcbd9-f053-4de8-91b4-4cef620011fe" />
-    </td>
-    <td>
-          <img width="1440" height="900" alt="2" 
-            src="https://github.com/user-attachments/assets/89edfac6-bb67-48e9-a361-0b098a97055d" />
+      <img width="1440" height="812" alt="Landing Page" 
+        src="https://github.com/user-attachments/assets/ecbf260c-8e5b-40ce-82dd-5c0c95de3906" />
     </td>
   </tr>
 </table>
@@ -200,9 +196,94 @@ placement-management-system/
 
 ## How to Run
 
-### Prerequisites
+Choose **one** of the following setup methods:
 
-Make sure the following are installed:
+- **Docker:** Compose runs MySQL, the backend, and the frontend. Follow the Docker steps only; skip the manual setup steps.
+- **Manual:** Run MySQL, the backend, and the frontend directly on your machine.
+
+### Option A: Run with Docker
+
+#### Prerequisites
+
+* Docker Desktop or Docker Engine with the Docker Compose plugin
+
+#### 1. Clone the repository and enter its directory:
+
+```bash
+git clone <repository-url>
+cd placement-management-system
+```
+
+#### 2. Create a local environment file and set the required values:
+
+```bash
+cp .env.example .env
+```
+
+Set the database, email, JWT, and super-admin values in `.env`. 
+
+#### 3. Build and start the application:
+
+```bash
+docker compose up --build -d
+```
+
+Compose starts MySQL and the application services. 
+
+The frontend will be available at [http://localhost:5173](http://localhost:5173), and the backend API, at [http://localhost:8080](http://localhost:8080).
+
+> You do not need to install or configure MySQL, Java, Maven, Node.js, or npm separately for this method.
+
+##### To follow the service logs:
+
+```bash
+docker compose logs -f
+```
+
+#### 4. Stop the containers while keeping the database data:
+
+```bash
+docker compose down
+```
+
+#### Run with Demo Data
+
+1. Set `DEMO_USER_PASSWORD` in `.env`. This password is shared by the seeded placement admin, recruiters, and students. Use a local-only password; do not commit it or use it outside local development.
+
+2. Start Compose with the Spring `demo` profile enabled:
+
+    ```bash
+    SPRING_PROFILES_ACTIVE=demo docker compose up --build -d
+    ```
+
+    The demo profile creates sample companies, recruiters, students, drives, eligibility criteria, applications, resumes, and recruitment activities. It creates missing demo records on startup and avoids duplicating existing ones.
+
+3. Demo Data:
+    
+    Demo accounts use the password configured in `DEMO_USER_PASSWORD`:
+
+    * **Placement Admin:** 
+        * `demo.admin@opportune.local`
+    * **Recruiters:**
+        * `kanan@northstar-demo.local`
+        * `mira@bluepeak-demo.local`
+        * `dev@cedarlabs-demo.local`
+        * `isha@meridian-demo.local`
+        * `manan@harbor-demo.local`
+    * **Students:** 
+        * `demo.student1@opportune.local` through `demo.student8@opportune.local`
+
+4. MySQL data is stored in a Docker volume and persists when containers are stopped or recreated. To permanently remove the local database and all its data:
+
+    ```bash
+    docker compose down -v
+    ```
+
+5. The next startup with the `demo` profile will seed the demo data again.
+
+### Option B: Run Manually
+
+#### Prerequisites
 
 * Java 21
 * Maven
@@ -210,33 +291,45 @@ Make sure the following are installed:
 * MySQL
 * Git
 
-### 1. Clone the Repository
+#### 1. Clone the repository and enter its directory:
 
 ```bash
 git clone <repository-url>
 cd placement-management-system
 ```
 
-### 2. Configure MySQL
+#### 2. Configure MySQL and backend environment
 
-Create a MySQL database for the application.
+Start your local MySQL server, then connect as a MySQL administrator and create a database and application user:
 
-The backend configuration uses environment variables for database connectivity. Configure the required database properties in your local environment or backend configuration.
+```sql
+CREATE DATABASE opportune;
 
-Example:
+CREATE USER 'opportune_user'@'localhost'
+IDENTIFIED BY 'replace-with-a-local-password';
 
-```env
-DB_URL=jdbc:mysql://localhost:3306/pms_db?createDatabaseIfNotExist=true
-DB_NAME=pms_db
-DB_USERNAME=your_mysql_username
-DB_PASSWORD=your_mysql_password
+GRANT ALL PRIVILEGES ON opportune.* TO 'opportune_user'@'localhost';
 ```
 
-> Do not commit passwords, JWT secrets, or other sensitive credentials to the repository.
+From the repository root, copy the backend environment example:
 
-### 3. Run the Backend
+```bash
+cp backend/.env.example backend/.env
+```
 
-Navigate to the backend directory:
+Edit `backend/.env` and set the database connection values:
+
+```env
+DB_URL=jdbc:mysql://localhost:3306/opportune
+DB_USERNAME=opportune_user
+DB_PASSWORD=replace-with-a-local-password
+```
+
+Configure any other required values in `backend/.env`, including the JWT secret, super-admin credentials, and mail settings. Keep this file local; do not commit it.
+
+#### 3. Run the Backend
+
+From the repository root, navigate to the backend directory:
 
 ```bash
 cd backend
@@ -245,13 +338,13 @@ cd backend
 Build and run the Spring Boot application:
 
 ```bash
-mvn clean install
-mvn spring-boot:run
+./mvnw clean install
+./mvnw spring-boot:run
 ```
 
-### 4. Run the Frontend
+#### 4. Run the Frontend
 
-Open another terminal and navigate to the frontend:
+In another terminal, from the repository root, navigate to the frontend directory:
 
 ```bash
 cd frontend
@@ -259,31 +352,7 @@ npm install
 npm run dev
 ```
 
-The frontend will start using the development server configured by the project.
-
-## Authentication & Security
-
-The application uses **JWT-based stateless authentication** with Spring Security.
-
-The authentication flow is:
-
-```text
-User Login
-    ↓
-Credential Verification
-    ↓
-JWT Token Generation
-    ↓
-Token Sent with Subsequent Requests
-    ↓
-JWT Validation
-    ↓
-Role-Based Authorization
-    ↓
-Protected Resource
-```
-
-Passwords are securely stored using BCrypt hashing, while protected APIs require valid authentication and appropriate role permissions.
+Open the URL printed by the frontend development server.
 
 ## API Documentation
 
@@ -291,19 +360,9 @@ The backend exposes RESTful APIs for communication between the React frontend an
 
 API testing and development can be performed using **Postman**. The project also includes **Swagger/OpenAPI** support.
 
-## Development
+When running the application, Swagger UI is available at: 
 
-The project follows these architectural principles:
-
-* Layered backend architecture
-* RESTful API design
-* DTO-based API communication
-* Centralized exception handling
-* Backend validation
-* JWT authentication
-* Role-Based Access Control (RBAC)
-* Normalized relational database design
-* Modular and maintainable components
+http://localhost:8080/swagger-ui/index.html
 
 ## Future Enhancements
 
@@ -321,7 +380,6 @@ Potential future improvements include:
 ## Team
 
 Developed as a team project as part of the **PG Certificate Programme in Advanced Computing (PGCP-AC), C-DAC Bangalore**.
-
 
 ## License
 

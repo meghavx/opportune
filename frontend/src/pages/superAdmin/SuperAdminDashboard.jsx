@@ -91,6 +91,7 @@ import Button from '../../components/Button'
 import SkeletonLoader from '../../components/SkeletonLoader'
 
 import { getCurrentUser } from '../../services/superAdminService'
+import { APP_NAME } from '../../config/appConfig'
 
 export default function SuperAdminDashboard() {
   const navigate = useNavigate()
@@ -128,7 +129,7 @@ export default function SuperAdminDashboard() {
     <div className="flex flex-col gap-6">
       <PageHeader
         title="Super Admin Dashboard"
-        description="Welcome to the Placement Management System."
+        description={`Welcome to ${APP_NAME}.`}
         breadcrumb={['Dashboard']}
       />
 

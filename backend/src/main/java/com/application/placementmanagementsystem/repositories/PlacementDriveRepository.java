@@ -1,5 +1,6 @@
 package com.application.placementmanagementsystem.repositories;
 
+import com.application.placementmanagementsystem.models.Company;
 import com.application.placementmanagementsystem.models.PlacementDrive;
 import com.application.placementmanagementsystem.models.enums.DriveStatus;
 import org.springframework.data.jpa.repository.EntityGraph;
@@ -29,10 +30,9 @@ public interface PlacementDriveRepository extends JpaRepository<PlacementDrive, 
 
     long countByCompanyId(Long companyId);
 
-    long countByCompanyIdAndStatus(
-            Long companyId,
-            DriveStatus status
-    );
+    long countByCompanyIdAndStatus(Long companyId, DriveStatus status);
 
     long countByStatus(DriveStatus status);
+
+    Optional<PlacementDrive> findByCompanyAndJobRoleIgnoreCase(Company company, String jobRole);
 }

@@ -22,6 +22,7 @@ import { useAuth } from '../hooks/useAuth'
 import { GraduationCap, User } from 'lucide-react'
 import { ROLE_LABELS } from '../constants/roles'
 import Avatar from '../components/Avatar'
+import { APP_NAME } from '../config/appConfig'
 
 export default function Navbar({ onToggleSidebar }) {
   const { user, role } = useAuth()
@@ -42,7 +43,7 @@ export default function Navbar({ onToggleSidebar }) {
         </span>
         
         <span className="text-sm font-semibold sm:text-base">
-          College Placement Management System
+          {APP_NAME}
         </span>
       </div>
 
