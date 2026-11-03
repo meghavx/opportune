@@ -1,13 +1,15 @@
 package com.application.placementmanagementsystem.controllers;
 
 import com.application.placementmanagementsystem.common.ApiResponse;
+import com.application.placementmanagementsystem.common.ResponseBuilder;
 import com.application.placementmanagementsystem.dtos.placementDrive.PlacementDriveCreateRequest;
 import com.application.placementmanagementsystem.dtos.placementDrive.PlacementDriveResponse;
 import com.application.placementmanagementsystem.dtos.placementDrive.PlacementDriveSummaryResponse;
 import com.application.placementmanagementsystem.dtos.placementDrive.PlacementDriveUpdateRequest;
+import com.application.placementmanagementsystem.dtos.placementDrive.JobDescriptionSuggestionResponse;
 import com.application.placementmanagementsystem.models.enums.DriveStatus;
+import com.application.placementmanagementsystem.services.ai.AiSuggestionService;
 import com.application.placementmanagementsystem.services.placementdrive.PlacementDriveService;
-import com.application.placementmanagementsystem.common.ResponseBuilder;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -17,6 +19,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -27,6 +30,25 @@ import java.util.List;
 public class PlacementDriveController {
 
     private final PlacementDriveService placementDriveService;
+    private final AiSuggestionService aiSuggestionService;
+
+    @PostMapping(
+            path = "/recruiter/drives/extract-details/file",
+            consumes = "multipart/form-data"
+    )
+    @PreAuthorize("hasRole('RECRUITER')")
+    @Operation(summary = "Extract Placement Drive Suggestions from a Job Description File")
+    public ResponseEntity<ApiResponse<JobDescriptionSuggestionResponse>> extractDriveDetails(
+            @RequestParam("file") MultipartFile file
+    ) {
+        JobDescriptionSuggestionResponse response = aiSuggestionService.extractDriveDetails(file);
+        return ResponseEntity.ok(
+                ResponseBuilder.success(
+                        "Job description suggestions extracted successfully",
+                        response
+                )
+        );
+    }
 
     @PostMapping("/recruiter/drives")
     @PreAuthorize("hasRole('RECRUITER')")

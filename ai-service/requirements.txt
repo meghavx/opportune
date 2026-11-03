@@ -1,0 +1,5 @@
+fastapi[standard]
+httpx
+pypdf
+python-docx
+python-multipart
