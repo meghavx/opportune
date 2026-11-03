@@ -7,6 +7,7 @@ import com.application.placementmanagementsystem.dtos.placementDrive.PlacementDr
 import com.application.placementmanagementsystem.dtos.placementDrive.PlacementDriveSummaryResponse;
 import com.application.placementmanagementsystem.dtos.placementDrive.PlacementDriveUpdateRequest;
 import com.application.placementmanagementsystem.dtos.placementDrive.JobDescriptionSuggestionResponse;
+import com.application.placementmanagementsystem.dtos.placementDrive.JobDescriptionTextRequest;
 import com.application.placementmanagementsystem.models.enums.DriveStatus;
 import com.application.placementmanagementsystem.services.ai.AiSuggestionService;
 import com.application.placementmanagementsystem.services.placementdrive.PlacementDriveService;
@@ -42,6 +43,22 @@ public class PlacementDriveController {
             @RequestParam("file") MultipartFile file
     ) {
         JobDescriptionSuggestionResponse response = aiSuggestionService.extractDriveDetails(file);
+        return ResponseEntity.ok(
+                ResponseBuilder.success(
+                        "Job description suggestions extracted successfully",
+                        response
+                )
+        );
+    }
+
+    @PostMapping("/recruiter/drives/extract-details")
+    @PreAuthorize("hasRole('RECRUITER')")
+    @Operation(summary = "Extract Placement Drive Suggestions from Job Description Text")
+    public ResponseEntity<ApiResponse<JobDescriptionSuggestionResponse>> extractDriveDetails(
+            @Valid @RequestBody JobDescriptionTextRequest request
+    ) {
+        JobDescriptionSuggestionResponse response =
+                aiSuggestionService.extractDriveDetails(request.text());
         return ResponseEntity.ok(
                 ResponseBuilder.success(
                         "Job description suggestions extracted successfully",

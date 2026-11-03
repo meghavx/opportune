@@ -9,24 +9,25 @@ eligibility, selection process, compensation, and deadlines.
 
 Current Features:
 - Full form matching every section in the spec
+- AI-assisted field suggestions from pasted text or PDF/DOCX uploads
 - Dynamic add/remove selection-process rounds
 - Validation for required fields, package, and deadlines
 - Works for both Create and Edit (reads :driveId from the route)
 
-Future Backend Integration:
-POST /recruiter/drives (create) or PUT /recruiter/drives/{id} (edit).
+Drive data is saved through POST /recruiter/drives or PUT /recruiter/drives/{id}.
 ==========================================
 */
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { Plus, X } from 'lucide-react'
+import { FileText, Plus, Sparkles, Upload, X } from 'lucide-react'
 import PageHeader from '../../components/PageHeader'
 import Card from '../../components/Card'
 import Input from '../../components/Input'
 import Textarea from '../../components/Textarea'
 import Dropdown from '../../components/Dropdown'
 import Button from '../../components/Button'
+import Alert from '../../components/Alert'
 import {
   getRecruiterDriveById,
   getDriveEligibility,
@@ -34,6 +35,8 @@ import {
   updateDrive,
   createDriveEligibility,
   updateDriveEligibility,
+  extractDriveSuggestionsFromFile,
+  extractDriveSuggestionsFromText,
 } from '../../services/recruiterService'
 import { useNotification } from '../../hooks/useNotification'
 import { validateRequired } from '../../utils/validators'
@@ -58,6 +61,9 @@ const EMPTY_DRIVE = {
   },
 }
 
+const MAX_JD_CHARACTERS = 20_000
+const MAX_FILE_BYTES = 5 * 1024 * 1024
+
 export default function RecruiterDriveForm() {
   const { driveId } = useParams()
   const navigate = useNavigate()
@@ -67,6 +73,12 @@ export default function RecruiterDriveForm() {
   const [form, setForm] = useState(EMPTY_DRIVE)
   const [errors, setErrors] = useState({})
   const [saving, setSaving] = useState(false)
+  const [sourceText, setSourceText] = useState('')
+  const [selectedFile, setSelectedFile] = useState(null)
+  const [extracting, setExtracting] = useState('')
+  const [extractionError, setExtractionError] = useState('')
+  const [suggestionWarnings, setSuggestionWarnings] = useState([])
+  const uploadInputRef = useRef(null)
 
   useEffect(() => {
     if (!isEdit) return
@@ -100,6 +112,85 @@ export default function RecruiterDriveForm() {
         [field]: value,
       },
     }))
+  }
+
+  const applySuggestions = (suggestion) => {
+    const eligibility = suggestion.eligibility || {}
+    setForm((previous) => ({
+      ...previous,
+      jobRole: suggestion.jobRole ?? previous.jobRole,
+      jobDescription: suggestion.jobDescription ?? previous.jobDescription,
+      packageOffered:
+        suggestion.packageOffered == null
+          ? previous.packageOffered
+          : String(suggestion.packageOffered),
+      location: suggestion.location ?? previous.location,
+      eligibility: {
+        ...previous.eligibility,
+        minCgpa:
+          eligibility.minCgpa == null
+            ? previous.eligibility.minCgpa
+            : String(eligibility.minCgpa),
+        department: eligibility.department ?? previous.eligibility.department,
+        maxBacklogs:
+          eligibility.maxBacklogs == null
+            ? previous.eligibility.maxBacklogs
+            : String(eligibility.maxBacklogs),
+        graduationYear:
+          eligibility.graduationYear == null
+            ? previous.eligibility.graduationYear
+            : String(eligibility.graduationYear),
+      },
+    }))
+    setSuggestionWarnings(suggestion.warnings || [])
+    setErrors({})
+  }
+
+  const extractSuggestions = async (source, extract) => {
+    setExtracting(source)
+    setExtractionError('')
+    setSuggestionWarnings([])
+
+    try {
+      const suggestion = await extract()
+      applySuggestions(suggestion)
+      notify('Suggestions added to the form. Review them before saving.')
+    } catch (error) {
+      console.error('Failed to extract job description suggestions:', error)
+      setExtractionError(
+        error.response?.data?.message ||
+          error.message ||
+          'Could not extract suggestions. Please try again.'
+      )
+    } finally {
+      setExtracting('')
+    }
+  }
+
+  const handleFileSelect = (event) => {
+    const file = event.target.files?.[0]
+    setExtractionError('')
+    setSuggestionWarnings([])
+    if (!file) {
+      setSelectedFile(null)
+      return
+    }
+
+    const filename = file.name.toLowerCase()
+    if (!filename.endsWith('.pdf') && !filename.endsWith('.docx')) {
+      setSelectedFile(null)
+      setExtractionError('Choose a PDF or DOCX file.')
+      event.target.value = ''
+      return
+    }
+    if (file.size > MAX_FILE_BYTES) {
+      setSelectedFile(null)
+      setExtractionError('The file must be 5 MB or smaller.')
+      event.target.value = ''
+      return
+    }
+    setSelectedFile(file)
+    event.target.value = ''
   }
 
   const toggleDepartment = (dept) => {
@@ -185,6 +276,7 @@ export default function RecruiterDriveForm() {
     if (!validate()) return
 
     setSaving(true)
+    let driveSaved = false
 
     try {
       // Payload for Drive API
@@ -208,6 +300,7 @@ export default function RecruiterDriveForm() {
       if (isEdit) {
         // Update drive
         await updateDrive(driveId, drivePayload)
+        driveSaved = true
 
         // Update eligibility
         await updateDriveEligibility(driveId, eligibilityPayload)
@@ -216,6 +309,7 @@ export default function RecruiterDriveForm() {
       } else {
         // Create drive
         const createdDrive = await createDrive(drivePayload)
+        driveSaved = true
 
         // Create eligibility for the new drive
         await createDriveEligibility(
@@ -230,11 +324,24 @@ export default function RecruiterDriveForm() {
     } catch (error) {
       console.error(error)
 
-      notify(
-        isEdit
-          ? 'Failed to update drive.'
-          : 'Failed to create drive.'
-      )
+      const errorMessage =
+        error.response?.data?.message ||
+        error.message ||
+        'An unexpected error occurred.'
+
+      if (driveSaved) {
+        notify(
+          isEdit
+            ? `Drive details were saved, but eligibility could not be updated: ${errorMessage}`
+            : `The drive was created as a draft, but eligibility could not be saved: ${errorMessage}. Open the draft to continue instead of creating it again.`,
+          'error'
+        )
+      } else {
+        notify(
+          `${isEdit ? 'Failed to update drive' : 'Failed to create drive'}: ${errorMessage}`,
+          'error'
+        )
+      }
     } finally {
       setSaving(false)
     }
@@ -247,6 +354,117 @@ export default function RecruiterDriveForm() {
         description="Fill in every section to publish a new opportunity for students."
         breadcrumb={['Dashboard', 'Placement Drives', isEdit ? 'Edit' : 'Create']}
       />
+
+      <Card title="AI-assisted Job Description">
+        <p className="mb-4 text-sm text-gray-600">
+          Paste the job description or upload a PDF/DOCX to generate field
+          suggestions. Review and edit the suggestions before saving the drive.
+        </p>
+
+        <Textarea
+          label="Paste or type the full job description"
+          name="sourceJobDescription"
+          value={sourceText}
+          onChange={(event) => setSourceText(event.target.value)}
+          placeholder="Paste or type the job description here..."
+          rows={8}
+          maxLength={MAX_JD_CHARACTERS}
+          helperText={`${sourceText.length.toLocaleString()} / ${MAX_JD_CHARACTERS.toLocaleString()} characters`}
+        />
+        <div className="mt-3">
+          <Button
+            type="button"
+            icon={Sparkles}
+            loading={extracting === 'text'}
+            disabled={!sourceText.trim() || !!extracting}
+            onClick={() =>
+              extractSuggestions(
+                'text',
+                () => extractDriveSuggestionsFromText(sourceText)
+              )
+            }
+          >
+            Extract suggestions from text
+          </Button>
+        </div>
+
+        <div className="my-5 flex items-center gap-3 text-xs font-medium uppercase tracking-wide text-gray-400">
+          <span className="h-px flex-1 bg-gray-200" />
+          or upload a file
+          <span className="h-px flex-1 bg-gray-200" />
+        </div>
+
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+          <label className="flex min-h-10 cursor-pointer items-center justify-center gap-2 rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">
+            <Upload size={16} />
+            Choose PDF or DOCX
+            <input
+              type="file"
+              accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+              className="sr-only"
+              ref={uploadInputRef}
+              onChange={handleFileSelect}
+              disabled={!!extracting}
+            />
+          </label>
+          {selectedFile && (
+            <div className="flex min-w-0 items-center gap-2 text-sm text-gray-600">
+              <FileText size={16} className="shrink-0" />
+              <span className="truncate">{selectedFile.name}</span>
+              <button
+                type="button"
+                className="rounded p-1 text-gray-500 hover:bg-gray-100"
+                onClick={() => {
+                  setSelectedFile(null)
+                  uploadInputRef.current.value = ''
+                }}
+                aria-label="Remove selected file"
+                disabled={!!extracting}
+              >
+                <X size={16} />
+              </button>
+            </div>
+          )}
+          <Button
+            type="button"
+            icon={Sparkles}
+            loading={extracting === 'file'}
+            disabled={!selectedFile || !!extracting}
+            onClick={() =>
+              extractSuggestions(
+                'file',
+                () => extractDriveSuggestionsFromFile(selectedFile)
+              )
+            }
+            className="sm:ml-auto"
+          >
+            Extract suggestions from file
+          </Button>
+        </div>
+        <p className="mt-2 text-xs text-gray-500">
+          PDF and DOCX only; maximum file size is 5 MB. Scanned PDFs are not
+          supported.
+        </p>
+
+        {extractionError && (
+          <div className="mt-4">
+            <Alert type="error" message={extractionError} />
+          </div>
+        )}
+        {suggestionWarnings.length > 0 && (
+          <div
+            className="mt-4 rounded-lg border border-yellow-200 bg-yellow-50 px-4 py-3 text-sm text-yellow-800"
+            role="status"
+          >
+            <p className="mb-2 font-semibold">Review these suggestions:</p>
+            <ul className="list-inside list-disc space-y-1">
+              {suggestionWarnings.map((warning, index) => (
+                <li key={`${index}-${warning}`}>{warning}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </Card>
 
       <Card title="Job Details">
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">

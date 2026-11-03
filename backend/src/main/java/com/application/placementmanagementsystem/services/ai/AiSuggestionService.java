@@ -6,4 +6,6 @@ import org.springframework.web.multipart.MultipartFile;
 public interface AiSuggestionService {
 
     JobDescriptionSuggestionResponse extractDriveDetails(MultipartFile file);
+
+    JobDescriptionSuggestionResponse extractDriveDetails(String text);
 }

@@ -14,6 +14,8 @@ import org.springframework.web.client.RestClient;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.content;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.method;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo;
@@ -84,6 +86,10 @@ class AiSuggestionServiceImplTest {
         assertEquals(2025, response.eligibility().graduationYear());
         assertEquals(7.0, response.eligibility().minCgpa().doubleValue());
         assertEquals("Confirm eligible batches.", response.warnings().getFirst());
+        String apiJson = new ObjectMapper().valueToTree(response).toString();
+        assertTrue(apiJson.contains("\"jobRole\""));
+        assertTrue(apiJson.contains("\"minCgpa\""));
+        assertFalse(apiJson.contains("\"job_role\""));
         server.verify();
     }
 
@@ -118,6 +124,52 @@ class AiSuggestionServiceImplTest {
         );
 
         assertThrows(IllegalArgumentException.class, () -> service.extractDriveDetails(file));
+        server.verify();
+    }
+
+    @Test
+    void forwardsTextAndMapsSnakeCaseSuggestions() {
+        String text = "Engineering Trainee in Bengaluru";
+        String responseBody = """
+                {
+                  "job_role": "Engineering Trainee",
+                  "job_description": "Build enterprise solutions.",
+                  "package_offered": null,
+                  "location": "Bengaluru",
+                  "eligibility": {
+                    "min_cgpa": 7.0,
+                    "department": null,
+                    "max_backlogs": 0,
+                    "graduation_year": 2025
+                  },
+                  "warnings": []
+                }
+                """;
+        server.expect(requestTo("http://ai-service/extract-drive-details"))
+                .andExpect(method(HttpMethod.POST))
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+                .andExpect(content().json("{\"text\":\"Engineering Trainee in Bengaluru\"}"))
+                .andRespond(withSuccess(responseBody, MediaType.APPLICATION_JSON));
+
+        JobDescriptionSuggestionResponse response = service.extractDriveDetails(text);
+
+        assertEquals("Engineering Trainee", response.jobRole());
+        assertEquals("Bengaluru", response.location());
+        server.verify();
+    }
+
+    @Test
+    void rejectsBlankTextWithoutCallingFastApi() {
+        assertThrows(IllegalArgumentException.class, () -> service.extractDriveDetails("  "));
+        server.verify();
+    }
+
+    @Test
+    void rejectsTextOverLimitWithoutCallingFastApi() {
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> service.extractDriveDetails("x".repeat(20_001))
+        );
         server.verify();
     }
 

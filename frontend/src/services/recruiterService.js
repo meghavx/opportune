@@ -93,6 +93,39 @@ export async function createDrive(drive) {
   }
 }
 
+export async function extractDriveSuggestionsFromText(text) {
+  try {
+    const response = await apiClient.post('/recruiter/drives/extract-details', {
+      text,
+    })
+    return response.data.data
+  } catch (error) {
+    console.error('Failed to extract drive suggestions from text:', error)
+    throw error
+  }
+}
+
+export async function extractDriveSuggestionsFromFile(file) {
+  try {
+    const formData = new FormData()
+    formData.append('file', file)
+
+    const response = await apiClient.post(
+      '/recruiter/drives/extract-details/file',
+      formData,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      }
+    )
+    return response.data.data
+  } catch (error) {
+    console.error('Failed to extract drive suggestions from file:', error)
+    throw error
+  }
+}
+
 // Future: PUT /recruiter/drives/{id}
 // export function updateDrive(driveId, updates) {
 //   return Promise.resolve({ id: driveId, ...updates })

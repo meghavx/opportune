@@ -1,6 +1,7 @@
 package com.application.placementmanagementsystem.services.ai;
 
 import com.application.placementmanagementsystem.dtos.placementDrive.JobDescriptionSuggestionResponse;
+import com.application.placementmanagementsystem.dtos.placementDrive.JobDescriptionTextRequest;
 import com.application.placementmanagementsystem.exceptions.AiServiceException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -28,7 +29,8 @@ import java.util.Locale;
 public class AiSuggestionServiceImpl implements AiSuggestionService {
 
     private static final long MAX_FILE_SIZE = 5 * 1024 * 1024;
-    private static final String EXTRACTION_PATH = "/extract-drive-details/file";
+    private static final String FILE_EXTRACTION_PATH = "/extract-drive-details/file";
+    private static final String TEXT_EXTRACTION_PATH = "/extract-drive-details";
 
     private final RestClient restClient;
     private final ObjectMapper objectMapper;
@@ -69,11 +71,41 @@ public class AiSuggestionServiceImpl implements AiSuggestionService {
         fileHeaders.setContentType(MediaType.APPLICATION_OCTET_STREAM);
         body.add("file", new HttpEntity<>(fileResource, fileHeaders));
 
+        return sendForSuggestions(
+                FILE_EXTRACTION_PATH,
+                MediaType.MULTIPART_FORM_DATA,
+                body
+        );
+    }
+
+    @Override
+    public JobDescriptionSuggestionResponse extractDriveDetails(String text) {
+        if (text == null || text.isBlank()) {
+            throw new IllegalArgumentException("Job description text is required.");
+        }
+        if (text.length() > 20_000) {
+            throw new IllegalArgumentException(
+                    "Job description text must not exceed 20,000 characters."
+            );
+        }
+
+        return sendForSuggestions(
+                TEXT_EXTRACTION_PATH,
+                MediaType.APPLICATION_JSON,
+                new JobDescriptionTextRequest(text)
+        );
+    }
+
+    private JobDescriptionSuggestionResponse sendForSuggestions(
+            String path,
+            MediaType contentType,
+            Object body
+    ) {
         try {
             JobDescriptionSuggestionResponse response = restClient
                     .post()
-                    .uri(EXTRACTION_PATH)
-                    .contentType(MediaType.MULTIPART_FORM_DATA)
+                    .uri(path)
+                    .contentType(contentType)
                     .body(body)
                     .retrieve()
                     .body(JobDescriptionSuggestionResponse.class);
