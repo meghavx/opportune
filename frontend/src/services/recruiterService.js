@@ -93,6 +93,19 @@ export async function createDrive(drive) {
   }
 }
 
+export async function createDriveWithEligibility(drive, eligibility) {
+  try {
+    const response = await apiClient.post('/recruiter/drives/with-eligibility', {
+      drive,
+      eligibility,
+    })
+    return response.data.data
+  } catch (error) {
+    console.error('Failed to create drive with eligibility:', error)
+    throw error
+  }
+}
+
 export async function extractDriveSuggestionsFromText(text) {
   try {
     const response = await apiClient.post('/recruiter/drives/extract-details', {

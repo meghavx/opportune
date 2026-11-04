@@ -4,6 +4,7 @@ import com.application.placementmanagementsystem.dtos.placementDrive.PlacementDr
 import com.application.placementmanagementsystem.dtos.placementDrive.PlacementDriveResponse;
 import com.application.placementmanagementsystem.dtos.placementDrive.PlacementDriveSummaryResponse;
 import com.application.placementmanagementsystem.dtos.placementDrive.PlacementDriveUpdateRequest;
+import com.application.placementmanagementsystem.dtos.eligibility.EligibilityCriteriaRequest;
 import com.application.placementmanagementsystem.models.enums.DriveStatus;
 
 import java.util.List;
@@ -11,6 +12,11 @@ import java.util.List;
 public interface PlacementDriveService {
 
     PlacementDriveResponse createPlacementDrive(PlacementDriveCreateRequest request);
+
+    PlacementDriveResponse createPlacementDriveWithEligibility(
+            PlacementDriveCreateRequest driveRequest,
+            EligibilityCriteriaRequest eligibilityRequest
+    );
 
     PlacementDriveResponse updatePlacementDrive(Long driveId, PlacementDriveUpdateRequest request);
 

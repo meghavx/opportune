@@ -8,6 +8,7 @@ import com.application.placementmanagementsystem.dtos.placementDrive.PlacementDr
 import com.application.placementmanagementsystem.dtos.placementDrive.PlacementDriveUpdateRequest;
 import com.application.placementmanagementsystem.dtos.placementDrive.JobDescriptionSuggestionResponse;
 import com.application.placementmanagementsystem.dtos.placementDrive.JobDescriptionTextRequest;
+import com.application.placementmanagementsystem.dtos.placementDrive.PlacementDriveWithEligibilityCreateRequest;
 import com.application.placementmanagementsystem.models.enums.DriveStatus;
 import com.application.placementmanagementsystem.services.ai.AiSuggestionService;
 import com.application.placementmanagementsystem.services.placementdrive.PlacementDriveService;
@@ -74,6 +75,24 @@ public class PlacementDriveController {
             @Valid @RequestBody PlacementDriveCreateRequest request
     ) {
         PlacementDriveResponse response = placementDriveService.createPlacementDrive(request);
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ResponseBuilder.success(
+                        "Placement drive created successfully",
+                        response
+                ));
+    }
+
+    @PostMapping("/recruiter/drives/with-eligibility")
+    @PreAuthorize("hasRole('RECRUITER')")
+    @Operation(summary = "Create Placement Drive with Eligibility Criteria")
+    public ResponseEntity<ApiResponse<PlacementDriveResponse>> createPlacementDriveWithEligibility(
+            @Valid @RequestBody PlacementDriveWithEligibilityCreateRequest request
+    ) {
+        PlacementDriveResponse response =
+                placementDriveService.createPlacementDriveWithEligibility(
+                        request.drive(),
+                        request.eligibility()
+                );
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ResponseBuilder.success(
                         "Placement drive created successfully",

@@ -1,6 +1,7 @@
 package com.application.placementmanagementsystem.services.placementdrive;
 
 import com.application.placementmanagementsystem.auth.CustomUserPrincipal;
+import com.application.placementmanagementsystem.dtos.eligibility.EligibilityCriteriaRequest;
 import com.application.placementmanagementsystem.dtos.eligibility.EligibilityEvaluationResult;
 import com.application.placementmanagementsystem.dtos.placementDrive.PlacementDriveCreateRequest;
 import com.application.placementmanagementsystem.dtos.placementDrive.PlacementDriveResponse;
@@ -10,6 +11,7 @@ import com.application.placementmanagementsystem.exceptions.InvalidRequestExcept
 import com.application.placementmanagementsystem.exceptions.ResourceNotFoundException;
 import com.application.placementmanagementsystem.mappers.PlacementDriveMapper;
 import com.application.placementmanagementsystem.models.PlacementDrive;
+import com.application.placementmanagementsystem.models.EligibilityCriteria;
 import com.application.placementmanagementsystem.models.Recruiter;
 import com.application.placementmanagementsystem.models.Student;
 import com.application.placementmanagementsystem.models.User;
@@ -53,6 +55,40 @@ public class PlacementDriveServiceImpl implements PlacementDriveService {
     public PlacementDriveResponse createPlacementDrive(
             PlacementDriveCreateRequest request
     ) {
+        PlacementDrive savedDrive = createPlacementDriveEntity(request);
+        return placementDriveMapper.toResponse(savedDrive);
+    }
+
+    @Transactional
+    @Override
+    public PlacementDriveResponse createPlacementDriveWithEligibility(
+            PlacementDriveCreateRequest driveRequest,
+            EligibilityCriteriaRequest eligibilityRequest
+    ) {
+        PlacementDrive savedDrive = createPlacementDriveEntity(driveRequest);
+
+        EligibilityCriteria eligibilityCriteria = EligibilityCriteria.builder()
+                .placementDrive(savedDrive)
+                .minCgpa(eligibilityRequest.getMinCgpa())
+                .department(eligibilityRequest.getDepartment())
+                .maxBacklogs(eligibilityRequest.getMaxBacklogs())
+                .graduationYear(eligibilityRequest.getGraduationYear())
+                .build();
+        EligibilityCriteria savedEligibility =
+                eligibilityCriteriaRepository.save(eligibilityCriteria);
+        savedDrive.setEligibilityCriteria(savedEligibility);
+
+        auditLogService.log(
+                AuditAction.CREATE,
+                AuditEntityType.ELIGIBILITY_CRITERIA,
+                savedEligibility.getId(),
+                "Created eligibility criteria."
+        );
+
+        return placementDriveMapper.toResponse(savedDrive);
+    }
+
+    private PlacementDrive createPlacementDriveEntity(PlacementDriveCreateRequest request) {
         Recruiter recruiter = getAuthenticatedRecruiter();
         validateDriveDates(request.getApplicationDeadline(), request.getDriveDate());
 
@@ -76,7 +112,7 @@ public class PlacementDriveServiceImpl implements PlacementDriveService {
                 "Created placement drive: " + savedDrive.getJobRole()
         );
 
-        return placementDriveMapper.toResponse(savedDrive);
+        return savedDrive;
     }
 
     @Transactional

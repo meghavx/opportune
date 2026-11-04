@@ -31,9 +31,8 @@ import Alert from '../../components/Alert'
 import {
   getRecruiterDriveById,
   getDriveEligibility,
-  createDrive,
+  createDriveWithEligibility,
   updateDrive,
-  createDriveEligibility,
   updateDriveEligibility,
   extractDriveSuggestionsFromFile,
   extractDriveSuggestionsFromText,
@@ -307,16 +306,7 @@ export default function RecruiterDriveForm() {
 
         notify('Drive updated successfully.')
       } else {
-        // Create drive
-        const createdDrive = await createDrive(drivePayload)
-        driveSaved = true
-
-        // Create eligibility for the new drive
-        await createDriveEligibility(
-          createdDrive.id,
-          eligibilityPayload
-        )
-
+        await createDriveWithEligibility(drivePayload, eligibilityPayload)
         notify('Drive created successfully.')
       }
 
