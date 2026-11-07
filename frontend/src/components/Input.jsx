@@ -22,6 +22,7 @@ export default function Input({
   type = 'text',
   value,
   onChange,
+  onKeyDown,
   placeholder = '',
   required = false,
   disabled = false,
@@ -44,6 +45,7 @@ export default function Input({
         type={type}
         value={value}
         onChange={onChange}
+        onKeyDown={onKeyDown}
         placeholder={placeholder}
         disabled={disabled}
         readOnly={readOnly}

@@ -37,7 +37,7 @@ GET /api/drives/{id}
 */
 
 import { useEffect, useState } from 'react'
-import { Eye } from 'lucide-react'
+import { Eye, FileText } from 'lucide-react'
 
 import PageHeader from '../../components/PageHeader'
 import StatisticCard from '../../components/StatisticCard'
@@ -49,12 +49,14 @@ import Modal from '../../components/Modal'
 import SkeletonLoader from '../../components/SkeletonLoader'
 
 import { getAdminDrives, getDriveById } from '../../services/adminService'
+import { getDriveJobDescriptionFile } from '../../services/driveService'
 
 import { useSearch } from '../../hooks/useSearch'
 import { useNotification } from '../../hooks/useNotification'
 
 import { formatDate } from '../../utils/formatDate'
 import { formatSalary } from '../../utils/formatSalary'
+import { openDocumentPreview } from '../../utils/openDocumentPreview'
 
 export default function AdminDrives() {
   const { notify } = useNotification()
@@ -62,6 +64,7 @@ export default function AdminDrives() {
   const [drives, setDrives] = useState([])
   const [loading, setLoading] = useState(true)
   const [viewDrive, setViewDrive] = useState(null)
+  const [openingJd, setOpeningJd] = useState(false)
 
   const {
     searchTerm,
@@ -109,6 +112,20 @@ export default function AdminDrives() {
         'Failed to load drive details.',
         'error'
       )
+    }
+  }
+
+  const handleViewJd = async () => {
+    if (!viewDrive) return
+
+    setOpeningJd(true)
+    try {
+      await openDocumentPreview(() => getDriveJobDescriptionFile(viewDrive.id))
+    } catch (error) {
+      console.error(error)
+      notify(error.message || 'Failed to open the job description document.', 'error')
+    } finally {
+      setOpeningJd(false)
     }
   }
 
@@ -295,6 +312,25 @@ export default function AdminDrives() {
               </div>
             </div>
 
+            {viewDrive.jobDescriptionFileName && (
+              <div className="flex flex-col gap-3 rounded-lg border p-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex min-w-0 items-center gap-2 text-sm text-gray-700">
+                  <FileText size={18} className="shrink-0" />
+                  <span className="break-all">{viewDrive.jobDescriptionFileName}</span>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  icon={FileText}
+                  loading={openingJd}
+                  onClick={handleViewJd}
+                >
+                  View JD document
+                </Button>
+              </div>
+            )}
+
             <div>
               <p className="mb-4 text-xs font-semibold uppercase tracking-wide text-gray-500">
                 Eligibility Criteria
@@ -340,6 +376,23 @@ export default function AdminDrives() {
                   <p className="mt-1 text-sm text-gray-800">
                     {viewDrive.eligibility?.graduationYear ?? '-'}
                   </p>
+                </div>
+
+                <div className="col-span-2">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                    Required Skills
+                  </p>
+                  {viewDrive.requiredSkills?.length ? (
+                    <ul className="mt-1 list-disc space-y-1 pl-5 text-sm text-gray-800">
+                      {viewDrive.requiredSkills.map((skill) => (
+                        <li key={skill}>{skill}</li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="mt-1 text-sm text-gray-800">
+                      No required skills listed.
+                    </p>
+                  )}
                 </div>
 
               </div>

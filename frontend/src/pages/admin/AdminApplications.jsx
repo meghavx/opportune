@@ -20,7 +20,7 @@ Backend APIs
 */
 
 import { useEffect, useMemo, useState } from 'react'
-import { Eye } from 'lucide-react'
+import { Download, Eye, FileText } from 'lucide-react'
 
 import PageHeader from '../../components/PageHeader'
 import StatisticCard from '../../components/StatisticCard'
@@ -46,6 +46,7 @@ import { formatDate } from '../../utils/formatDate'
 import { formatSalary } from '../../utils/formatSalary'
 import { formatApplicationStatus } from '../../utils/formatApplicationStatus'
 import { APPLICATION_STATUS } from '../../constants/applicationStatus'
+import { openPdfPreview } from '../../utils/openPdfPreview'
 
 export default function AdminApplications() {
   const { notify } = useNotification()
@@ -57,6 +58,8 @@ export default function AdminApplications() {
   const [searchTerm, setSearchTerm] = useState('')
 
   const [resume, setResume] = useState(null)
+  const [resumeLoading, setResumeLoading] = useState(false)
+  const [resumeError, setResumeError] = useState(false)
 
   const [viewApplication, setViewApplication] = useState(null)
 
@@ -105,47 +108,67 @@ export default function AdminApplications() {
   }
 
   const handleView = async (applicationId) => {
-  try {
-    setViewApplication(null)
-    const data = await getApplicationById(applicationId)
-    setViewApplication(data)
     try {
-      const resumeData = await getResume(data.studentId)
-      setResume(resumeData)
-    } catch (error) {
+      setViewApplication(null)
       setResume(null)
+      setResumeError(false)
+      setResumeLoading(true)
+      const data = await getApplicationById(applicationId)
+      setViewApplication(data)
+      try {
+        const resumeData = await getResume(data.studentId)
+        setResume(resumeData)
+      } catch (error) {
+        if (error.response?.status === 404) {
+          setResume(null)
+        } else {
+          console.error('Failed to load student resume:', error)
+          setResumeError(true)
+          notify('Failed to load student resume.')
+        }
+      }
+    } catch (error) {
+      console.error(error)
+      notify('Failed to load application details')
+    } finally {
+      setResumeLoading(false)
     }
-  } catch (error) {
-    console.error(error)
-    notify('Failed to load application details')
   }
-}
 
-const handleResumeDownload = async (studentId) => {
-  try {
-    const blob = await downloadResume(studentId)
-
-    const url = window.URL.createObjectURL(blob)
-
-    const link = document.createElement('a')
-
-    link.href = url
-
-    link.download = resume?.fileName || 'resume'
-
-    document.body.appendChild(link)
-
-    link.click()
-
-    link.remove()
-
-    window.URL.revokeObjectURL(url)
-
-  } catch (error) {
-    console.error(error)
-    notify('Failed to download resume')
+  const handleResumeView = async (studentId) => {
+    try {
+      await openPdfPreview(() => downloadResume(studentId))
+    } catch (error) {
+      console.error('Failed to open resume:', error)
+      notify(error.message || 'Failed to open resume.')
+    }
   }
-}
+
+  const handleResumeDownload = async (studentId) => {
+    try {
+      const blob = await downloadResume(studentId)
+
+      const url = window.URL.createObjectURL(blob)
+
+      const link = document.createElement('a')
+
+      link.href = url
+
+      link.download = resume?.fileName || 'resume'
+
+      document.body.appendChild(link)
+
+      link.click()
+
+      link.remove()
+
+      window.setTimeout(() => window.URL.revokeObjectURL(url), 120_000)
+
+    } catch (error) {
+      console.error(error)
+      notify('Failed to download resume')
+    }
+  }
 
   return (
     <div className="flex flex-col gap-6">
@@ -259,6 +282,7 @@ const handleResumeDownload = async (studentId) => {
           onClose={() => {
             setViewApplication(null)
             setResume(null)
+            setResumeError(false)
           }}
           title="Application Details"
           size="lg"
@@ -358,21 +382,34 @@ const handleResumeDownload = async (studentId) => {
               </p>
 
               <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 text-sm text-gray-700">
-                {resume ? (
-                  <div className="flex items-center justify-between">
-
-                    <span>{resume.fileName}</span>
-
-                    <Button
-                      size="sm"
-                      onClick={() =>
-                        handleResumeDownload(viewApplication.studentId)
-                      }
-                    >
-                      Download
-                    </Button>
-
+                {resumeLoading ? (
+                  'Loading resume...'
+                ) : resume ? (
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <span className="flex items-center gap-2">
+                      <FileText size={18} />
+                      {resume.fileName}
+                    </span>
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        icon={Eye}
+                        onClick={() => handleResumeView(viewApplication.studentId)}
+                      >
+                        View
+                      </Button>
+                      <Button
+                        size="sm"
+                        icon={Download}
+                        onClick={() => handleResumeDownload(viewApplication.studentId)}
+                      >
+                        Download
+                      </Button>
+                    </div>
                   </div>
+                ) : resumeError ? (
+                  'Unable to load resume details.'
                 ) : (
                   'Resume not available.'
                 )}

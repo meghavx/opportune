@@ -23,6 +23,11 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.LinkedHashMap;
+import java.util.ArrayList;
+import java.util.Locale;
+import java.util.Map;
+
 @Service
 @RequiredArgsConstructor
 @Transactional
@@ -49,7 +54,17 @@ public class ProfileServiceImpl implements ProfileService {
         User user = student.getUser();
         user.setFullName(request.getFullName());
         user.setPhoneNumber(request.getPhoneNumber());
+        if (request.getSkills() != null) {
+            Map<String, String> uniqueSkills = new LinkedHashMap<>();
+            request.getSkills().stream()
+                    .map(String::trim)
+                    .filter(skill -> !skill.isEmpty())
+                    .forEach(skill ->
+                            uniqueSkills.putIfAbsent(skill.toLowerCase(Locale.ROOT), skill));
+            student.setSkills(new ArrayList<>(uniqueSkills.values()));
+        }
         userRepository.save(user);
+        studentRepository.save(student);
         return studentMapper.toResponse(student);
     }
 

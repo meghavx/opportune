@@ -18,7 +18,7 @@ GET /recruiter/applicants, GET /recruiter/student/{id}.
 */
 
 import { useEffect, useState } from 'react'
-import { Eye, CheckCircle2, XCircle, CalendarPlus } from 'lucide-react'
+import { Eye, CheckCircle2, XCircle, CalendarPlus, Download, FileText } from 'lucide-react'
 import PageHeader from '../../components/PageHeader'
 import StatisticCard from '../../components/StatisticCard'
 import SearchBar from '../../components/SearchBar'
@@ -30,12 +30,15 @@ import SkeletonLoader from '../../components/SkeletonLoader'
 import {
   getRecruiterDrives,
   getApplicants,
+  getApplicantResume,
+  downloadApplicantResume,
   updateApplicationStatus,
 } from '../../services/recruiterService'
 import { useSearch } from '../../hooks/useSearch'
 import { useNotification } from '../../hooks/useNotification'
 import { formatDate } from '../../utils/formatDate'
 import Dropdown from '../../components/Dropdown'
+import { openPdfPreview } from '../../utils/openPdfPreview'
 
 export default function RecruiterApplicants() {
   const { notify } = useNotification()
@@ -44,6 +47,8 @@ export default function RecruiterApplicants() {
   const [drives, setDrives] = useState([])
   const [selectedDrive, setSelectedDrive] = useState('')
   const [selected, setSelected] = useState(null)
+  const [resumeDetails, setResumeDetails] = useState(null)
+  const [resumeState, setResumeState] = useState('idle')
 
   const { searchTerm, setSearchTerm, filteredItems } =
     useSearch(applicants, ['studentName'])
@@ -107,6 +112,51 @@ export default function RecruiterApplicants() {
     await updateApplicationStatus(applicant.id, status)
     setApplicants((prev) => prev.map((a) => (a.id === applicant.id ? { ...a, status } : a)))
     notify(status === 'SHORTLISTED' ? 'Candidate Shortlisted' : 'Candidate Rejected')
+  }
+
+  const handleViewApplicant = async (applicant) => {
+    setSelected(applicant)
+    setResumeDetails(null)
+    setResumeState('loading')
+
+    try {
+      const resume = await getApplicantResume(applicant.studentId)
+      setResumeDetails(resume)
+      setResumeState('available')
+    } catch (error) {
+      if (error.response?.status === 404) {
+        setResumeState('missing')
+      } else {
+        console.error('Failed to load applicant resume:', error)
+        setResumeState('error')
+        notify('Failed to load student resume.', 'error')
+      }
+    }
+  }
+
+  const handleViewResume = async () => {
+    try {
+      await openPdfPreview(() => downloadApplicantResume(selected.studentId))
+    } catch (error) {
+      notify(error.message || 'Failed to open resume.', 'error')
+    }
+  }
+
+  const handleDownloadResume = async () => {
+    try {
+      const file = await downloadApplicantResume(selected.studentId)
+      const fileUrl = window.URL.createObjectURL(file)
+      const link = document.createElement('a')
+      link.href = fileUrl
+      link.download = resumeDetails.fileName
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+      window.setTimeout(() => window.URL.revokeObjectURL(fileUrl), 120_000)
+    } catch (error) {
+      console.error('Failed to download applicant resume:', error)
+      notify('Failed to download resume.', 'error')
+    }
   }
 
   return (
@@ -190,7 +240,7 @@ export default function RecruiterApplicants() {
           emptyMessage="No applicants found."
           actions={(row) => (
             <div className="flex flex-wrap gap-1">
-              <Button variant="ghost" size="sm" icon={Eye} onClick={() => setSelected(row)} />
+              <Button variant="ghost" size="sm" icon={Eye} onClick={() => handleViewApplicant(row)} />
               <Button
                 variant="ghost"
                 size="sm"
@@ -251,6 +301,31 @@ export default function RecruiterApplicants() {
               <span className="font-medium">Status:</span>{' '}
               <Badge label={selected.status} />
             </p>
+            <div className="border-t pt-3">
+              <p className="mb-2 font-medium">Resume</p>
+              {resumeState === 'loading' ? (
+                <p className="text-gray-500">Loading resume...</p>
+              ) : resumeState === 'available' ? (
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <span className="flex items-center gap-2">
+                    <FileText size={18} />
+                    {resumeDetails.fileName}
+                  </span>
+                  <div className="flex gap-2">
+                    <Button variant="outline" size="sm" icon={Eye} onClick={handleViewResume}>
+                      View
+                    </Button>
+                    <Button variant="outline" size="sm" icon={Download} onClick={handleDownloadResume}>
+                      Download
+                    </Button>
+                  </div>
+                </div>
+              ) : resumeState === 'missing' ? (
+                <p className="text-gray-500">No resume uploaded.</p>
+              ) : resumeState === 'error' ? (
+                <p className="text-red-600">Unable to load resume details.</p>
+              ) : null}
+            </div>
             {selected.status === 'SHORTLISTED' && (
               <div className="flex gap-2 pt-2">
                 <Button
