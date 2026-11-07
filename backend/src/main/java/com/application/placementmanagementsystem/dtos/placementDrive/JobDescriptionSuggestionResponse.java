@@ -13,6 +13,8 @@ public record JobDescriptionSuggestionResponse(
         @JsonAlias("package_offered")
         BigDecimal packageOffered,
         String location,
+        @JsonAlias("required_skills")
+        List<String> requiredSkills,
         EligibilitySuggestion eligibility,
         List<String> warnings
 ) {

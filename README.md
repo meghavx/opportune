@@ -23,7 +23,9 @@ The system is designed with a **modular and scalable architecture**, allowing th
 * Student profile and resume management
 * Company and recruiter management
 * Placement drive creation and management
+* Optional PDF/DOCX job-description attachments and AI-assisted skill extraction
 * Automated eligibility verification
+* Student skill-match rankings with matching-skill explanations and profile gaps
 * Online applications and application tracking
 * Candidate shortlisting and recruitment status updates
 * Recruitment activity and interview scheduling
@@ -37,8 +39,10 @@ The system is designed with a **modular and scalable architecture**, allowing th
 | ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Super Admin**     | Manage Placement Admin, system settings, and audit logs                                                                                      |
 | **Placement Admin** | Manage students, recruiters, companies, monitor placement activities, and generate reports                                                            |
-| **Recruiter**       | Manage company placement drives and recruitment activities, define eligibility criteria for drives, review applicants, shortlist candidates, update recruitment status, and publish results |
-| **Student**         | Maintain profile, upload resume, view drives and eligibility status, apply to drives, and track applications                                          |
+| **Recruiter**       | Manage company placement drives and recruitment activities, attach job descriptions, define eligibility criteria, review applicants, shortlist candidates, update recruitment status, and publish results |
+| **Student**         | Maintain profile and skills, upload resume, review skill-match suggestions and gaps, view job descriptions and eligibility status, apply to drives, and track applications |
+
+Student skill-match scores use listed job skills and the skills saved in the student's profile. They are advisory and do not replace the drive's eligibility check.
 
 
 ### Placement Drive Ownership
@@ -256,7 +260,7 @@ docker compose down
     SPRING_PROFILES_ACTIVE=demo docker compose up --build -d
     ```
 
-    The demo profile creates sample companies, recruiters, students, drives, eligibility criteria, applications, resumes, and recruitment activities. It creates missing demo records on startup and avoids duplicating existing ones.
+    The demo profile creates sample companies, recruiters, students with varied resume skills, drives with required skills and viewable job-description PDFs, eligibility criteria, applications, and recruitment activities. It creates missing demo records on startup and avoids duplicating existing ones.
 
 3. Demo Data:
     
@@ -369,7 +373,7 @@ http://localhost:8080/swagger-ui/index.html
 Potential future improvements include:
 
 * Multi-institution support
-* AI-based resume analysis and job recommendations
+* Advanced AI-based career guidance and job recommendations
 * Automated calendar-based interview scheduling
 * Advanced placement analytics
 * Mobile application

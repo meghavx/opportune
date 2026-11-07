@@ -8,6 +8,7 @@ import lombok.Getter;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Getter
 @Builder
@@ -22,6 +23,10 @@ public class PlacementDriveResponse {
     private String jobRole;
 
     private String jobDescription;
+
+    private List<String> requiredSkills;
+
+    private String jobDescriptionFileName;
 
     private BigDecimal packageOffered;
 

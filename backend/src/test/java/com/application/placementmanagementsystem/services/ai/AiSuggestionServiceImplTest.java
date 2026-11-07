@@ -54,6 +54,7 @@ class AiSuggestionServiceImplTest {
                   "job_description": "Build enterprise solutions.",
                   "package_offered": null,
                   "location": "Bengaluru",
+                  "required_skills": ["Java", "SQL"],
                   "eligibility": {
                     "min_cgpa": 7.0,
                     "department": null,
@@ -83,6 +84,7 @@ class AiSuggestionServiceImplTest {
         JobDescriptionSuggestionResponse response = service.extractDriveDetails(file);
 
         assertEquals("Engineering Trainee", response.jobRole());
+        assertEquals(java.util.List.of("Java", "SQL"), response.requiredSkills());
         assertEquals(2025, response.eligibility().graduationYear());
         assertEquals(7.0, response.eligibility().minCgpa().doubleValue());
         assertEquals("Confirm eligible batches.", response.warnings().getFirst());
@@ -136,6 +138,7 @@ class AiSuggestionServiceImplTest {
                   "job_description": "Build enterprise solutions.",
                   "package_offered": null,
                   "location": "Bengaluru",
+                  "required_skills": [],
                   "eligibility": {
                     "min_cgpa": 7.0,
                     "department": null,
@@ -170,6 +173,30 @@ class AiSuggestionServiceImplTest {
                 IllegalArgumentException.class,
                 () -> service.extractDriveDetails("x".repeat(20_001))
         );
+        server.verify();
+    }
+
+    @Test
+    void forwardsResumePdfAndMapsExtractedSkills() {
+        String responseBody = """
+                {"skills": ["Java", "Spring Boot"]}
+                """;
+        server.expect(requestTo("http://ai-service/extract-resume-skills"))
+                .andExpect(method(HttpMethod.POST))
+                .andExpect(content().contentTypeCompatibleWith(MediaType.MULTIPART_FORM_DATA))
+                .andExpect(content().string(allOf(
+                        containsString("name=\"file\""),
+                        containsString("filename=\"Ananya_Resume.pdf\""),
+                        containsString("resume bytes")
+                )))
+                .andRespond(withSuccess(responseBody, MediaType.APPLICATION_JSON));
+
+        var response = service.extractResumeSkills(
+                "Ananya_Resume.pdf",
+                "resume bytes".getBytes()
+        );
+
+        assertEquals(java.util.List.of("Java", "Spring Boot"), response.skills());
         server.verify();
     }
 

@@ -9,6 +9,8 @@ import org.hibernate.annotations.UpdateTimestamp;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(
@@ -40,6 +42,19 @@ public class PlacementDrive {
 
     @Column(name = "job_description", columnDefinition = "TEXT")
     private String jobDescription;
+
+    @ElementCollection
+    @CollectionTable(
+            name = "placement_drive_required_skills",
+            joinColumns = @JoinColumn(name = "placement_drive_id")
+    )
+    @OrderColumn(name = "skill_order")
+    @Column(name = "skill", nullable = false, length = 100)
+    @Builder.Default
+    private List<String> requiredSkills = new ArrayList<>();
+
+    @Column(name = "job_description_file_name")
+    private String jobDescriptionFileName;
 
     @Column(name = "package_offered", nullable = false, precision = 10, scale = 2)
     private BigDecimal packageOffered;

@@ -2,6 +2,7 @@ package com.application.placementmanagementsystem.services.ai;
 
 import com.application.placementmanagementsystem.dtos.placementDrive.JobDescriptionSuggestionResponse;
 import com.application.placementmanagementsystem.dtos.placementDrive.JobDescriptionTextRequest;
+import com.application.placementmanagementsystem.dtos.placementDrive.ResumeSkillExtractionResponse;
 import com.application.placementmanagementsystem.exceptions.AiServiceException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -31,6 +32,7 @@ public class AiSuggestionServiceImpl implements AiSuggestionService {
     private static final long MAX_FILE_SIZE = 5 * 1024 * 1024;
     private static final String FILE_EXTRACTION_PATH = "/extract-drive-details/file";
     private static final String TEXT_EXTRACTION_PATH = "/extract-drive-details";
+    private static final String RESUME_SKILL_EXTRACTION_PATH = "/extract-resume-skills";
 
     private final RestClient restClient;
     private final ObjectMapper objectMapper;
@@ -88,12 +90,67 @@ public class AiSuggestionServiceImpl implements AiSuggestionService {
                     "Job description text must not exceed 20,000 characters."
             );
         }
-
         return sendForSuggestions(
                 TEXT_EXTRACTION_PATH,
                 MediaType.APPLICATION_JSON,
                 new JobDescriptionTextRequest(text)
         );
+    }
+
+    @Override
+    public ResumeSkillExtractionResponse extractResumeSkills(String fileName, byte[] file) {
+        if (fileName == null || !fileName.toLowerCase(Locale.ROOT).endsWith(".pdf")) {
+            throw new IllegalArgumentException("Only PDF resume files are supported.");
+        }
+        if (file == null || file.length == 0) {
+            throw new IllegalArgumentException("Resume file is required.");
+        }
+        if (file.length > MAX_FILE_SIZE) {
+            throw new IllegalArgumentException("Maximum allowed file size is 5 MB.");
+        }
+        ByteArrayResource fileResource = new ByteArrayResource(file) {
+            @Override
+            public String getFilename() {
+                return fileName;
+            }
+        };
+        MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
+        HttpHeaders fileHeaders = new HttpHeaders();
+        fileHeaders.setContentDisposition(
+                ContentDisposition.formData()
+                        .name("file")
+                        .filename(fileName)
+                        .build()
+        );
+        fileHeaders.setContentType(MediaType.APPLICATION_OCTET_STREAM);
+        body.add("file", new HttpEntity<>(fileResource, fileHeaders));
+
+        try {
+            ResumeSkillExtractionResponse response = restClient
+                    .post()
+                    .uri(RESUME_SKILL_EXTRACTION_PATH)
+                    .contentType(MediaType.MULTIPART_FORM_DATA)
+                    .body(body)
+                    .retrieve()
+                    .body(ResumeSkillExtractionResponse.class);
+            if (response == null) {
+                throw new AiServiceException(
+                        HttpStatus.BAD_GATEWAY,
+                        "Resume skill extraction service returned an empty response."
+                );
+            }
+            return response;
+        } catch (RestClientResponseException exception) {
+            HttpStatus status = exception.getStatusCode().is4xxClientError()
+                    ? HttpStatus.valueOf(exception.getStatusCode().value())
+                    : HttpStatus.BAD_GATEWAY;
+            throw new AiServiceException(status, getServiceErrorMessage(exception));
+        } catch (ResourceAccessException exception) {
+            throw new AiServiceException(
+                    HttpStatus.SERVICE_UNAVAILABLE,
+                    "JD extraction service is unavailable. Check that the AI service and Ollama are running."
+            );
+        }
     }
 
     private JobDescriptionSuggestionResponse sendForSuggestions(

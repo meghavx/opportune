@@ -22,6 +22,8 @@ public class PlacementDriveMapper {
                 .companyName(drive.getCompany().getCompanyName())
                 .jobRole(drive.getJobRole())
                 .jobDescription(drive.getJobDescription())
+                .requiredSkills(drive.getRequiredSkills())
+                .jobDescriptionFileName(drive.getJobDescriptionFileName())
                 .packageOffered(drive.getPackageOffered())
                 .location(drive.getLocation())
                 .applicationDeadline(drive.getApplicationDeadline())

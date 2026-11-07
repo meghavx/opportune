@@ -2,6 +2,7 @@ package com.application.placementmanagementsystem.services.resume;
 
 import com.application.placementmanagementsystem.auth.CustomUserPrincipal;
 import com.application.placementmanagementsystem.dtos.resume.ResumeResponse;
+import com.application.placementmanagementsystem.dtos.placementDrive.ResumeSkillExtractionResponse;
 import com.application.placementmanagementsystem.exceptions.ResourceNotFoundException;
 import com.application.placementmanagementsystem.mappers.ResumeMapper;
 import com.application.placementmanagementsystem.models.Resume;
@@ -10,6 +11,7 @@ import com.application.placementmanagementsystem.models.User;
 import com.application.placementmanagementsystem.repositories.ResumeRepository;
 import com.application.placementmanagementsystem.repositories.StudentRepository;
 import com.application.placementmanagementsystem.repositories.UserRepository;
+import com.application.placementmanagementsystem.services.ai.AiSuggestionService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -30,6 +32,7 @@ public class ResumeServiceImpl implements ResumeService {
     private final StudentRepository studentRepository;
     private final UserRepository userRepository;
     private final ResumeMapper resumeMapper;
+    private final AiSuggestionService aiSuggestionService;
 
     @Override
     public ResumeResponse uploadResume(MultipartFile file) {
@@ -69,6 +72,16 @@ public class ResumeServiceImpl implements ResumeService {
     public byte[] downloadResume() {
 
         return getStudentResume().getFile();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public ResumeSkillExtractionResponse extractSkillsFromResume() {
+        Resume resume = getStudentResume();
+        return aiSuggestionService.extractResumeSkills(
+                resume.getFileName(),
+                resume.getFile()
+        );
     }
 
     @Override

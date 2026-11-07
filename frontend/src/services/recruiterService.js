@@ -139,6 +139,31 @@ export async function extractDriveSuggestionsFromFile(file) {
   }
 }
 
+export async function uploadDriveJobDescriptionFile(driveId, file) {
+  const formData = new FormData()
+  formData.append('file', file)
+  try {
+    const response = await apiClient.post(
+      `/recruiter/drives/${driveId}/job-description-file`,
+      formData,
+      { headers: { 'Content-Type': 'multipart/form-data' } }
+    )
+    return response.data.data
+  } catch (error) {
+    console.error('Failed to upload job description document:', error)
+    throw error
+  }
+}
+
+export async function deleteDriveJobDescriptionFile(driveId) {
+  try {
+    await apiClient.delete(`/recruiter/drives/${driveId}/job-description-file`)
+  } catch (error) {
+    console.error('Failed to remove job description document:', error)
+    throw error
+  }
+}
+
 // Future: PUT /recruiter/drives/{id}
 // export function updateDrive(driveId, updates) {
 //   return Promise.resolve({ id: driveId, ...updates })
@@ -243,6 +268,19 @@ export async function getApplicants(driveId) {
     console.error('Failed to fetch applicants:', error)
     throw error
   }
+}
+
+export async function getApplicantResume(studentId) {
+  const response = await apiClient.get(`/student/${studentId}/resume`)
+  return response.data.data
+}
+
+export async function downloadApplicantResume(studentId) {
+  const response = await apiClient.get(
+    `/student/${studentId}/resume/download`,
+    { responseType: 'blob' }
+  )
+  return response.data
 }
 
 // GET /recruiter/profile

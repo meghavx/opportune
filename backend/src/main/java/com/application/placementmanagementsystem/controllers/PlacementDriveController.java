@@ -17,12 +17,17 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
+import org.springframework.core.io.ByteArrayResource;
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.Locale;
 import java.util.List;
 
 @RestController
@@ -116,6 +121,62 @@ public class PlacementDriveController {
         );
     }
 
+    @PostMapping(
+            path = "/recruiter/drives/{driveId}/job-description-file",
+            consumes = MediaType.MULTIPART_FORM_DATA_VALUE
+    )
+    @PreAuthorize("hasRole('RECRUITER')")
+    @Operation(summary = "Attach or Replace Job Description Document")
+    public ResponseEntity<ApiResponse<String>> uploadJobDescriptionDocument(
+            @PathVariable Long driveId,
+            @RequestParam("file") MultipartFile file
+    ) {
+        String fileName = placementDriveService.uploadJobDescriptionDocument(driveId, file);
+        return ResponseEntity.ok(
+                ResponseBuilder.success("Job description document saved successfully", fileName)
+        );
+    }
+
+    @DeleteMapping("/recruiter/drives/{driveId}/job-description-file")
+    @PreAuthorize("hasRole('RECRUITER')")
+    @Operation(summary = "Remove Job Description Document")
+    public ResponseEntity<ApiResponse<Void>> deleteJobDescriptionDocument(
+            @PathVariable Long driveId
+    ) {
+        placementDriveService.deleteJobDescriptionDocument(driveId);
+        return ResponseEntity.ok(
+                ResponseBuilder.success("Job description document removed successfully", null)
+        );
+    }
+
+    @GetMapping("/drives/{driveId}/job-description-file")
+    @PreAuthorize("hasAnyRole('RECRUITER', 'PLACEMENT_ADMIN', 'STUDENT')")
+    @Operation(summary = "View or Download Job Description Document")
+    public ResponseEntity<ByteArrayResource> downloadJobDescriptionDocument(
+            @PathVariable Long driveId
+    ) {
+        var document = placementDriveService.downloadJobDescriptionDocument(driveId);
+        String lowerCaseFileName = document.fileName().toLowerCase(Locale.ROOT);
+        MediaType contentType = lowerCaseFileName.endsWith(".pdf")
+                ? MediaType.APPLICATION_PDF
+                : MediaType.parseMediaType(
+                        "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                );
+        ByteArrayResource resource = new ByteArrayResource(document.file());
+
+        return ResponseEntity.ok()
+                .contentType(contentType)
+                .header(
+                        HttpHeaders.CONTENT_DISPOSITION,
+                        ContentDisposition.inline()
+                                .filename(document.fileName())
+                                .build()
+                                .toString()
+                )
+                .contentLength(document.file().length)
+                .body(resource);
+    }
+
     @PatchMapping("/recruiter/drives/{id}/status")
     @PreAuthorize("hasRole('RECRUITER')")
     @Operation(summary = "Update Placement Drive Status")
@@ -150,8 +211,11 @@ public class PlacementDriveController {
     @GetMapping("/drives")
     @PreAuthorize("hasAnyRole('RECRUITER', 'PLACEMENT_ADMIN', 'STUDENT')")
     @Operation(summary = "Get Placement Drives")
-    public ResponseEntity<ApiResponse<List<PlacementDriveSummaryResponse>>> getPlacementDrives() {
-        List<PlacementDriveSummaryResponse> response = placementDriveService.getPlacementDrives();
+    public ResponseEntity<ApiResponse<List<PlacementDriveSummaryResponse>>> getPlacementDrives(
+            @RequestParam(defaultValue = "false") boolean showBestMatches
+    ) {
+        List<PlacementDriveSummaryResponse> response =
+                placementDriveService.getPlacementDrives(showBestMatches);
         return ResponseEntity.ok(
                 ResponseBuilder.success(
                         "Placement drives retrieved successfully",

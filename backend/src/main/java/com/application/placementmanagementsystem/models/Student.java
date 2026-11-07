@@ -5,6 +5,8 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(
@@ -45,4 +47,11 @@ public class Student {
 
     @Column(name = "current_backlogs", nullable = false)
     private Integer currentBacklogs = 0;
+
+    @ElementCollection
+    @CollectionTable(name = "student_skills", joinColumns = @JoinColumn(name = "student_id"))
+    @OrderColumn(name = "skill_order")
+    @Column(name = "skill", nullable = false, length = 100)
+    @Builder.Default
+    private List<String> skills = new ArrayList<>();
 }

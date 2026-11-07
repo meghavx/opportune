@@ -49,6 +49,7 @@ def ollama_fields(department: str | None = None) -> str:
         "job_description": "Backend development role in Bengaluru.",
         "package_offered": 12,
         "location": "Bengaluru",
+        "required_skills": ["Java", "SQL"],
         "eligibility": {
             "min_cgpa": 7.5,
             "department": department,
@@ -83,6 +84,11 @@ class ExtractDriveDetailsTests(unittest.TestCase):
         self.assertEqual(result["job_role"], "Backend Developer")
         self.assertEqual(result["package_offered"], 12)
         self.assertEqual(result["location"], "Bengaluru")
+        self.assertEqual(result["required_skills"], ["Java", "SQL"])
+        self.assertIsNotNone(fake_ollama.request_data)
+        prompt = str(fake_ollama.request_data["messages"][0]["content"])
+        self.assertIn("exactly one skill per item", prompt)
+        self.assertIn('["Python", "Java", "C/C++", "SQL"]', prompt)
         self.assertEqual(result["eligibility"]["min_cgpa"], 7.5)
         self.assertEqual(result["eligibility"]["max_backlogs"], 0)
         self.assertEqual(result["eligibility"]["graduation_year"], 2027)
@@ -215,6 +221,33 @@ class ExtractDriveDetailsTests(unittest.TestCase):
 
         self.assertEqual(response.status_code, 413)
         self.assertIn("5 MB limit", response.json()["detail"])
+        ollama_client.assert_not_called()
+
+    def test_extracts_skills_from_resume_pdf_text(self) -> None:
+        fake_ollama = FakeOllamaClient(json.dumps({"skills": ["Java", "Spring Boot"]}))
+
+        with (
+            patch("main.extract_jd_text", return_value="Projects used Java and Spring Boot."),
+            patch("main.httpx.AsyncClient", return_value=fake_ollama),
+        ):
+            response = self.client.post(
+                "/extract-resume-skills",
+                files={"file": ("resume.pdf", b"pdf bytes", "application/pdf")},
+            )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["skills"], ["Java", "Spring Boot"])
+        self.assertIn("Projects used Java and Spring Boot.", str(fake_ollama.request_data))
+
+    def test_resume_skill_extraction_rejects_non_pdf(self) -> None:
+        with patch("main.httpx.AsyncClient") as ollama_client:
+            response = self.client.post(
+                "/extract-resume-skills",
+                files={"file": ("resume.docx", b"text", "application/octet-stream")},
+            )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("Only PDF", response.json()["detail"])
         ollama_client.assert_not_called()
 
 

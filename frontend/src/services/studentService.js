@@ -20,6 +20,7 @@ import { studentApplicationData } from '../data/applicationData'
 import { studentNotificationData } from '../data/notificationData'
 
 import apiClient from './apiClient'
+export { getDriveJobDescriptionFile } from './driveService'
 
 // Future: GET /student/dashboard
 // export function getStudentDashboard() {
@@ -59,6 +60,7 @@ export async function updateStudentProfile(profile) {
     const response = await apiClient.put('/student/profile', {
       fullName: profile.fullName,
       phoneNumber: profile.phoneNumber,
+      skills: profile.skills || [],
     })
     return response.data.data
   } 
@@ -123,13 +125,20 @@ export async function downloadStudentResume() {
   return response
 }
 
+export async function extractStudentResumeSkills() {
+  const response = await apiClient.post('/student/profile/resume/extract-skills')
+  return response.data.data.skills
+}
+
 // Future: GET /student/drives
 // export function getEligibleDrives() {
 //   return Promise.resolve(placementDrivesData)
 // }
-export async function getEligibleDrives() {
+export async function getEligibleDrives(showBestMatches = false) {
   try {
-    const response = await apiClient.get('/drives')
+    const response = await apiClient.get('/drives', {
+      params: showBestMatches ? { showBestMatches: true } : {},
+    })
 
     //  console.log(response.data)
     return response.data.data

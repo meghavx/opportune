@@ -18,7 +18,7 @@ GET /student/drives, GET /student/drives/{id}, POST /student/apply.
 */
 
 import { useEffect, useState } from 'react'
-import { MapPin, CalendarDays, IndianRupee } from 'lucide-react'
+import { MapPin, CalendarDays, IndianRupee, FileText } from 'lucide-react'
 import PageHeader from '../../components/PageHeader'
 import SearchBar from '../../components/SearchBar'
 import Card from '../../components/Card'
@@ -28,7 +28,13 @@ import Modal from '../../components/Modal'
 import ConfirmationModal from '../../components/ConfirmationModal'
 import EmptyState from '../../components/EmptyState'
 import SkeletonLoader from '../../components/SkeletonLoader'
-import { getEligibleDrives, getDriveById, applyToDrive } from '../../services/studentService'
+import Checkbox from '../../components/Checkbox'
+import {
+  getEligibleDrives,
+  getDriveById,
+  getDriveJobDescriptionFile,
+  applyToDrive,
+} from '../../services/studentService'
 import { useSearch } from '../../hooks/useSearch'
 import { useNotification } from '../../hooks/useNotification'
 import { formatSalary } from '../../utils/formatSalary'
@@ -41,6 +47,8 @@ export default function StudentDrives() {
   const [selectedDrive, setSelectedDrive] = useState(null)
   const [confirmApply, setConfirmApply] = useState(null)
   const [applying, setApplying] = useState(false)
+  const [openingJd, setOpeningJd] = useState(false)
+  const [showBestMatches, setShowBestMatches] = useState(false)
 
   const { searchTerm, setSearchTerm, filteredItems } =
     useSearch(drives, ['companyName', 'jobRole'])
@@ -61,12 +69,25 @@ export default function StudentDrives() {
   // }, [notify])
   useEffect(() => {
     async function fetchDrives() {
+      setLoading(true)
       try {
-        const data = await getEligibleDrives()
-
-        // console.log(data)
-
+        const data = await getEligibleDrives(showBestMatches)
         setDrives(data)
+        setSelectedDrive((current) => {
+          if (!current) return current
+          const summary = data.find((drive) => drive.id === current.id)
+          return summary
+            ? {
+                ...current,
+                eligible: summary.eligible,
+                ineligibilityReasons: summary.ineligibilityReasons,
+                skillMatchPercentage: summary.skillMatchPercentage,
+                matchedSkills: summary.matchedSkills,
+                missingSkills: summary.missingSkills,
+                skillMatchNote: summary.skillMatchNote,
+              }
+            : current
+        })
       } catch (error) {
         console.error(error)
         notify('Failed to load drives.', 'error')
@@ -76,15 +97,49 @@ export default function StudentDrives() {
     }
 
     fetchDrives()
-  }, [])
+  }, [showBestMatches])
 
 
   const handleViewDetails = async (id) => {
     try {
       const drive = await getDriveById(id)
-      setSelectedDrive(drive)
+      const summary = drives.find((item) => item.id === id)
+      setSelectedDrive({
+        ...drive,
+        eligible: summary?.eligible,
+        ineligibilityReasons: summary?.ineligibilityReasons,
+        skillMatchPercentage: summary?.skillMatchPercentage,
+        matchedSkills: summary?.matchedSkills,
+        missingSkills: summary?.missingSkills,
+        skillMatchNote: summary?.skillMatchNote,
+      })
     } catch (error) {
       notify('Failed to load drive details.', 'error')
+    }
+  }
+
+  const handleViewJd = async (drive) => {
+    const previewWindow = window.open('about:blank', '_blank')
+    if (!previewWindow) {
+      notify('Allow pop-ups to view the job description document.', 'error')
+      return
+    }
+
+    setOpeningJd(true)
+    try {
+      const file = await getDriveJobDescriptionFile(drive.id)
+      const fileUrl = window.URL.createObjectURL(file)
+      previewWindow.opener = null
+      previewWindow.location.href = fileUrl
+      window.setTimeout(() => window.URL.revokeObjectURL(fileUrl), 120_000)
+    } catch (error) {
+      previewWindow.close()
+      notify(
+        error.response?.data?.message || 'Failed to open the job description document.',
+        'error'
+      )
+    } finally {
+      setOpeningJd(false)
     }
   }
 
@@ -112,17 +167,28 @@ export default function StudentDrives() {
     <div className="flex flex-col gap-6">
       <PageHeader
         title="Placement Drives"
-        description="Browse opportunities and apply to eligible drives."
+        description="Browse placement drives and check your eligibility."
         breadcrumb={['Dashboard', 'Placement Drives']}
       />
 
-      <div className="flex flex-col gap-4 sm:flex-row">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <SearchBar
           value={searchTerm}
           onChange={setSearchTerm}
           placeholder="Search by company or role..."
           className="sm:max-w-md"
         />
+        <div>
+          <Checkbox
+            name="show-best-matches"
+            label="Show my best matches"
+            checked={showBestMatches}
+            onChange={(event) => setShowBestMatches(event.target.checked)}
+          />
+          <p className="mt-1 text-xs text-gray-500">
+            Skill matches are shown only for eligible drives.
+          </p>
+        </div>
       </div>
 
       
@@ -159,6 +225,19 @@ export default function StudentDrives() {
                     />
 
                   </div>
+
+                  {showBestMatches && drive.eligible && (
+                    <div className="mt-4 rounded-lg bg-gray-50 px-3 py-2 text-sm">
+                      <p className="font-semibold text-gray-800">
+                        {drive.skillMatchPercentage == null
+                          ? 'Skill match unavailable'
+                          : `Skill match: ${drive.skillMatchPercentage}%`}
+                      </p>
+                      <p className="mt-1 text-xs text-gray-600">
+                        {drive.skillMatchNote}
+                      </p>
+                    </div>
+                  )}
 
                   <div className="mt-6 space-y-3 text-sm text-gray-600">
 
@@ -274,6 +353,41 @@ export default function StudentDrives() {
 
             </div>
 
+            {showBestMatches && selectedDrive.eligible && (
+              <div className="rounded-lg border border-primary-100 bg-primary-50 p-4">
+              <div className="flex items-center justify-between gap-3">
+                <h3 className="text-lg font-semibold text-gray-900">Skill match</h3>
+                <span className="font-semibold text-primary-700">
+                  {selectedDrive.skillMatchPercentage == null
+                    ? 'Not available'
+                    : `${selectedDrive.skillMatchPercentage}%`}
+                </span>
+              </div>
+              <p className="mt-1 text-sm text-gray-600">
+                {selectedDrive.skillMatchNote}
+              </p>
+              <p className="mt-2 text-xs text-gray-500">
+                This skill comparison is advisory and does not determine eligibility.
+              </p>
+              {!!selectedDrive.matchedSkills?.length && (
+                <div className="mt-3">
+                  <p className="text-sm font-medium text-green-800">Matching skills</p>
+                  <p className="mt-1 text-sm text-gray-700">
+                    {selectedDrive.matchedSkills.join(', ')}
+                  </p>
+                </div>
+              )}
+              {!!selectedDrive.missingSkills?.length && (
+                <div className="mt-3">
+                  <p className="text-sm font-medium text-amber-800">Skills not found in your profile</p>
+                  <p className="mt-1 text-sm text-gray-700">
+                    {selectedDrive.missingSkills.join(', ')}
+                  </p>
+                </div>
+              )}
+              </div>
+            )}
+
             {/* ================= Job Description ================= */}
 
             <div>
@@ -287,6 +401,25 @@ export default function StudentDrives() {
               </p>
 
             </div>
+
+            {selectedDrive.jobDescriptionFileName && (
+              <div className="flex flex-col gap-2 rounded-lg border p-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex items-center gap-2 text-sm text-gray-700">
+                  <FileText size={18} />
+                  <span>{selectedDrive.jobDescriptionFileName}</span>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  icon={FileText}
+                  loading={openingJd}
+                  onClick={() => handleViewJd(selectedDrive)}
+                >
+                  View JD document
+                </Button>
+              </div>
+            )}
 
             {/* ================= Eligibility ================= */}
 
@@ -313,7 +446,7 @@ export default function StudentDrives() {
 
               </div> */}
 
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
 
                 <div className="rounded-lg border p-4">
 
@@ -346,7 +479,19 @@ export default function StudentDrives() {
                   </p>
 
                   <p className="mt-1 text-lg font-semibold">
-                    {selectedDrive.eligibility.department}
+                    {selectedDrive.eligibility.department || 'All'}
+                  </p>
+
+                </div>
+
+                <div className="rounded-lg border p-4">
+
+                  <p className="text-sm text-gray-500">
+                    Minimum Graduation Year
+                  </p>
+
+                  <p className="mt-1 text-lg font-semibold">
+                    {selectedDrive.eligibility.graduationYear}
                   </p>
 
                 </div>
@@ -355,28 +500,19 @@ export default function StudentDrives() {
 
             </div>
 
-            {/* ================= Eligibility Reason ================= */}
-
-            {/* {!selectedDrive.eligible &&
+            {!selectedDrive.eligible &&
               selectedDrive.ineligibilityReasons?.length > 0 && (
-
-                <div>
-
-                  <h3 className="mb-3 text-lg font-semibold text-red-700">
+                <div className="rounded-lg border border-red-100 bg-red-50 p-4">
+                  <h3 className="mb-2 text-lg font-semibold text-red-800">
                     Why you are not eligible
                   </h3>
-
-                  <ul className="list-disc space-y-2 pl-5 text-sm text-red-600">
-
-                    {selectedDrive.ineligibilityReasons.map((reason) => (
-                      <li key={reason}>{reason}</li>
+                  <ul className="list-disc space-y-2 pl-5 text-sm text-red-700">
+                    {selectedDrive.ineligibilityReasons.map((reason, index) => (
+                      <li key={`${reason}-${index}`}>{reason}</li>
                     ))}
-
                   </ul>
-
                 </div>
-
-            )} */}
+              )}
 
           </div>
         )}

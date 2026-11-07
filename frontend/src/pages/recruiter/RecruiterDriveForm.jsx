@@ -36,6 +36,8 @@ import {
   updateDriveEligibility,
   extractDriveSuggestionsFromFile,
   extractDriveSuggestionsFromText,
+  uploadDriveJobDescriptionFile,
+  deleteDriveJobDescriptionFile,
 } from '../../services/recruiterService'
 import { useNotification } from '../../hooks/useNotification'
 import { validateRequired } from '../../utils/validators'
@@ -46,6 +48,7 @@ const EMPTY_DRIVE = {
   companyName: '',
   jobRole: '',
   jobDescription: '',
+  requiredSkills: [],
   packageOffered: '',
   location: '',
 
@@ -62,6 +65,10 @@ const EMPTY_DRIVE = {
 
 const MAX_JD_CHARACTERS = 20_000
 const MAX_FILE_BYTES = 5 * 1024 * 1024
+const DEPARTMENT_OPTIONS = [
+  { label: 'All', value: 'ALL' },
+  ...DEPARTMENTS,
+]
 
 export default function RecruiterDriveForm() {
   const { driveId } = useParams()
@@ -77,6 +84,7 @@ export default function RecruiterDriveForm() {
   const [extracting, setExtracting] = useState('')
   const [extractionError, setExtractionError] = useState('')
   const [suggestionWarnings, setSuggestionWarnings] = useState([])
+  const [removeExistingJdFile, setRemoveExistingJdFile] = useState(false)
   const uploadInputRef = useRef(null)
 
   useEffect(() => {
@@ -91,7 +99,11 @@ export default function RecruiterDriveForm() {
 
         setForm({
           ...drive,
-          eligibility,
+          requiredSkills: drive.requiredSkills || [],
+          eligibility: {
+            ...eligibility,
+            department: eligibility.department || 'ALL',
+          },
         })
       } catch (error) {
         console.error(error)
@@ -124,6 +136,7 @@ export default function RecruiterDriveForm() {
           ? previous.packageOffered
           : String(suggestion.packageOffered),
       location: suggestion.location ?? previous.location,
+      requiredSkills: suggestion.requiredSkills ?? previous.requiredSkills,
       eligibility: {
         ...previous.eligibility,
         minCgpa:
@@ -189,6 +202,7 @@ export default function RecruiterDriveForm() {
       return
     }
     setSelectedFile(file)
+    setRemoveExistingJdFile(false)
     event.target.value = ''
   }
 
@@ -228,9 +242,6 @@ export default function RecruiterDriveForm() {
     // Eligibility
     if (!validateRequired(form.eligibility.minCgpa))
       newErrors.minCgpa = 'Minimum CGPA is required.'
-
-    if (!validateRequired(form.eligibility.department))
-      newErrors.department = 'Department is required.'
 
     if (!validateRequired(form.eligibility.maxBacklogs))
       newErrors.maxBacklogs = 'Maximum backlogs is required.'
@@ -282,6 +293,7 @@ export default function RecruiterDriveForm() {
       const drivePayload = {
         jobRole: form.jobRole,
         jobDescription: form.jobDescription,
+        requiredSkills: form.requiredSkills,
         packageOffered: Number(form.packageOffered),
         location: form.location,
         applicationDeadline: form.applicationDeadline,
@@ -291,25 +303,52 @@ export default function RecruiterDriveForm() {
       // Payload for Eligibility API
       const eligibilityPayload = {
         minCgpa: Number(form.eligibility.minCgpa),
-        department: form.eligibility.department,
+        department:
+          !form.eligibility.department || form.eligibility.department === 'ALL'
+            ? null
+            : form.eligibility.department,
         maxBacklogs: Number(form.eligibility.maxBacklogs),
         graduationYear: Number(form.eligibility.graduationYear),
       }
 
+      let savedDriveId
       if (isEdit) {
         // Update drive
         await updateDrive(driveId, drivePayload)
         driveSaved = true
+        savedDriveId = driveId
 
         // Update eligibility
         await updateDriveEligibility(driveId, eligibilityPayload)
-
-        notify('Drive updated successfully.')
       } else {
-        await createDriveWithEligibility(drivePayload, eligibilityPayload)
-        notify('Drive created successfully.')
+        const createdDrive = await createDriveWithEligibility(
+          drivePayload,
+          eligibilityPayload
+        )
+        driveSaved = true
+        savedDriveId = createdDrive.id
       }
 
+      try {
+        if (selectedFile) {
+          await uploadDriveJobDescriptionFile(savedDriveId, selectedFile)
+        } else if (isEdit && removeExistingJdFile) {
+          await deleteDriveJobDescriptionFile(savedDriveId)
+        }
+      } catch (documentError) {
+        const message =
+          documentError.response?.data?.message ||
+          documentError.message ||
+          'Unable to save the JD document.'
+        notify(
+          `Drive details were saved, but the JD document was not saved: ${message}`,
+          'error'
+        )
+        navigate(ROUTES.RECRUITER_VIEW_DRIVES)
+        return
+      }
+
+      notify(isEdit ? 'Drive updated successfully.' : 'Drive created successfully.')
       navigate(ROUTES.RECRUITER_VIEW_DRIVES)
     } catch (error) {
       console.error(error)
@@ -348,7 +387,8 @@ export default function RecruiterDriveForm() {
       <Card title="AI-assisted Job Description">
         <p className="mb-4 text-sm text-gray-600">
           Paste the job description or upload a PDF/DOCX to generate field
-          suggestions. Review and edit the suggestions before saving the drive.
+          suggestions. An uploaded file will also be attached to the drive for
+          students to view. Review and edit all suggestions before saving.
         </p>
 
         <Textarea
@@ -414,6 +454,23 @@ export default function RecruiterDriveForm() {
                 <X size={16} />
               </button>
             </div>
+          )}
+          {isEdit && form.jobDescriptionFileName && !removeExistingJdFile && !selectedFile && (
+            <div className="flex items-center gap-2 text-sm text-gray-600">
+              <FileText size={16} className="shrink-0" />
+              <span className="truncate">Attached: {form.jobDescriptionFileName}</span>
+              <button
+                type="button"
+                className="rounded p-1 text-gray-500 hover:bg-gray-100"
+                onClick={() => setRemoveExistingJdFile(true)}
+                aria-label="Remove attached job description"
+              >
+                <X size={16} />
+              </button>
+            </div>
+          )}
+          {removeExistingJdFile && !selectedFile && (
+            <p className="text-sm text-amber-700">The attached JD will be removed when you save.</p>
           )}
           <Button
             type="button"
@@ -495,6 +552,21 @@ export default function RecruiterDriveForm() {
           value={form.jobDescription}
           onChange={(e) => handleChange('jobDescription', e.target.value)}
         />
+
+        <Textarea
+          className="mt-4"
+          label="Required Skills (comma-separated)"
+          name="requiredSkills"
+          value={(form.requiredSkills || []).join(', ')}
+          onChange={(event) =>
+            handleChange(
+              'requiredSkills',
+              event.target.value.split(',').map((skill) => skill.trim()).filter(Boolean)
+            )
+          }
+          placeholder="e.g. Java, Spring Boot, SQL, REST APIs"
+          helperText="Use concise, individual skill names (for example: Python, Java, C/C++, SQL). Remove full sentences or general traits."
+        />
       </Card>
 
       <Card title="Eligibility">
@@ -512,7 +584,7 @@ export default function RecruiterDriveForm() {
           />
 
           <Input
-            label="Graduation Year"
+            label="Minimum Graduation Year"
             type="number"
             value={form.eligibility.graduationYear}
             onChange={(e) =>
@@ -535,12 +607,12 @@ export default function RecruiterDriveForm() {
 
           <Dropdown
             label="Department"
+            placeholder="Select a department (optional)"
             value={form.eligibility.department}
             onChange={(e) =>
               handleEligibilityChange('department', e.target.value)
             }
-            options={DEPARTMENTS}
-            required
+            options={DEPARTMENT_OPTIONS}
             error={errors.department}
           />
         </div>
