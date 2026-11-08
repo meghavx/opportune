@@ -12,11 +12,22 @@
 ![Vite](https://img.shields.io/badge/Vite-D1D5DB?style=flat&logo=vite&logoColor=374151)
 ![Docker](https://img.shields.io/badge/Docker-D1D5DB?style=flat&logo=docker&logoColor=374151)
 
-A full-stack web application designed to **centralize and streamline campus placement activities within an institution**. Opportune connects students, recruiters, placement administrators, and super administrators through a secure, role-based platform, with AI-assisted job-description and resume-skill extraction and opt-in skill-based job matching.
+**Opportune** is a full-stack campus placement management platform that brings students, recruiters, placement administrators, and super administrators together in one secure, role-based system. It simplifies placement activities with AI-powered job description parsing, resume skill extraction, and skill-based job matching.
 
-It manages the placement lifecycle from student and recruiter management to placement drives, eligibility verification, applications, shortlisting, notifications, and placement reporting.
+The platform covers the complete placement process, from managing students, recruiters, and placement drives to verifying eligibility, handling applications, shortlisting candidates, sending notifications, and tracking placement progress.
 
-The system is designed with a **modular and scalable architecture**, allowing the platform to be extended with additional placement features and broader institutional deployment in the future.
+<table>
+  <tr>
+    <td>
+      <img width="1440" height="812" alt="image" 
+        src="https://github.com/user-attachments/assets/ea4617d7-38d5-4375-bdff-f32899bbf855" />
+    </td>
+    <td>
+      <img width="1437" height="813" alt="image" 
+        src="https://github.com/user-attachments/assets/6c08ab55-4b3a-4d42-ba34-5008673a8310" />
+    </td>
+  </tr>
+</table>
 
 ## Project Background
 
@@ -29,17 +40,6 @@ This version extends the original platform with:
 * Opt-in skill matching for eligible drives, including matched skills and skill gaps
 * Viewable job-description documents for students, recruiters, and placement administrators
 * Updated eligibility rules and related interface improvements
-
-## Screenshots
-
-<table>
-  <tr>
-    <td>
-      <img width="1440" height="812" alt="Landing Page" 
-        src="https://github.com/user-attachments/assets/ecbf260c-8e5b-40ce-82dd-5c0c95de3906" />
-    </td>
-  </tr>
-</table>
 
 ## Features
 
@@ -432,6 +432,27 @@ When running the application, Swagger UI is available at:
 
 http://localhost:8080/swagger-ui/index.html
 
+## Screenshots
+
+<table>
+  <tr>
+    <td>
+      <img width="1438" height="813" alt="image" 
+        src="https://github.com/user-attachments/assets/f60adb96-9a43-4d69-8e4e-5bee30ba591c" />
+    </td>
+    <td>
+      <img width="1437" height="811" alt="image" src="https://github.com/user-attachments/assets/6109ddbf-8f66-4a99-b359-3d759ecde5c2" />
+    <td>
+      <img width="1439" height="814" alt="image" src="https://github.com/user-attachments/assets/a08a00b6-4e7b-4eba-9aae-94802dabf238" />
+    </td>
+    <td>
+      <img width="1436" height="810" alt="image" src="https://github.com/user-attachments/assets/82e48ae5-988e-4072-be0d-7f9b167bbc35" />
+    <td>
+      <img width="1438" height="811" alt="image" src="https://github.com/user-attachments/assets/33c4ceda-3a8a-4a82-af6f-2767b459482d" />
+    </td>
+  </tr>
+</table>
+
 ## Future Enhancements
 
 Potential future improvements include:
@@ -440,7 +461,6 @@ Potential future improvements include:
 * Advanced AI-based career guidance beyond the current skills-based job matching
 * Automated calendar-based interview scheduling
 * Advanced placement analytics
-* Mobile application
 * Integration with institutional ERP/SIS systems
 * Cloud deployment
 * Enhanced email/SMS notifications
