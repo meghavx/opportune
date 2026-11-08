@@ -1,6 +1,6 @@
-# Opportune: An AI-Powered Campus Placement Platform
+# Opportune: An AI-Assisted Campus Placement Platform
 
-![Java 21](assets/java-badge.svg)
+![Java 21](https://img.shields.io/badge/Java_21-D1D5DB?style=flat&logo=openjdk&logoColor=374151)
 ![Spring Boot](https://img.shields.io/badge/Spring_Boot-D1D5DB?style=flat&logo=springboot&logoColor=374151)
 ![Maven](https://img.shields.io/badge/Maven-D1D5DB?style=flat&logo=apachemaven&logoColor=374151)
 ![Python 3.12](https://img.shields.io/badge/Python_3.12-D1D5DB?style=flat&logo=python&logoColor=374151)
