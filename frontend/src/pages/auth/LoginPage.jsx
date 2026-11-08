@@ -13,8 +13,17 @@ import LoginCard from '../../components/auth/LoginCard'
 
 export default function LoginPage() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4">
-      <LoginCard />
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/70 p-4 backdrop-blur-sm"
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget) {
+          setShowLogin(false)
+        }
+      }}
+    >
+      <div className="w-full max-w-md">
+        <LoginCard />
+      </div>
     </div>
   )
 }

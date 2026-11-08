@@ -18,12 +18,17 @@ GET /student/profile to load, PUT /student/profile to save.
 */
 
 import { useEffect, useState } from 'react'
+import { Plus, Sparkles, X } from 'lucide-react'
 import PageHeader from '../../components/PageHeader'
 import Card from '../../components/Card'
 import Input from '../../components/Input'
 import Button from '../../components/Button'
 import SkeletonLoader from '../../components/SkeletonLoader'
-import { getStudentProfile, updateStudentProfile } from '../../services/studentService'
+import {
+  extractStudentResumeSkills,
+  getStudentProfile,
+  updateStudentProfile,
+} from '../../services/studentService'
 import { useNotification } from '../../hooks/useNotification'
 import { validateEmail, validatePhone, validateCGPA, validateRequired } from '../../utils/validators'
 import { useAuth } from '../../hooks/useAuth'
@@ -36,6 +41,9 @@ export default function StudentProfileForm() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [errors, setErrors] = useState({})
+  const [skillInput, setSkillInput] = useState('')
+  const [skillInputError, setSkillInputError] = useState('')
+  const [extractingSkills, setExtractingSkills] = useState(false)
   const navigate = useNavigate()
   const { updateUser } = useAuth()
 
@@ -64,6 +72,53 @@ useEffect(() => {
 
   const handleChange = (field, value) => {
     setProfile((prev) => ({ ...prev, [field]: value }))
+  }
+
+  const addSkills = () => {
+    const newSkills = skillInput
+      .split(',')
+      .map((skill) => skill.trim())
+      .filter(Boolean)
+    if (!newSkills.length) return
+    const existing = profile.skills || []
+    const existingKeys = new Set(existing.map((skill) => skill.toLowerCase()))
+    const uniqueNewSkills = newSkills.filter((skill) => {
+      const key = skill.toLowerCase()
+      if (existingKeys.has(key)) return false
+      existingKeys.add(key)
+      return true
+    })
+    if (existing.length + uniqueNewSkills.length > 50) {
+      setSkillInputError('You can add up to 50 skills.')
+      return
+    }
+    setProfile((previous) => ({
+      ...previous,
+      skills: [...existing, ...uniqueNewSkills],
+    }))
+    setSkillInputError('')
+    setSkillInput('')
+  }
+
+  const handleExtractSkills = async () => {
+    setExtractingSkills(true)
+    try {
+      const skills = await extractStudentResumeSkills()
+      setProfile((previous) => ({ ...previous, skills }))
+      notify(
+        skills.length
+          ? 'Resume skills extracted. Review and save them to your profile.'
+          : 'No skills could be confidently identified. Add skills manually if needed.',
+        'success'
+      )
+    } catch (error) {
+      notify(
+        error.response?.data?.message || 'Could not extract skills from your resume.',
+        'error'
+      )
+    } finally {
+      setExtractingSkills(false)
+    }
   }
 
     const validate = () => {
@@ -199,6 +254,80 @@ const handleSave = async () => {
             />
 
         </div>
+        </Card>
+
+        <Card title="Skills">
+          <p className="mb-4 text-sm text-gray-600">
+            Skills help prioritize opportunities and explain where you may have gaps.
+            They do not determine placement-drive eligibility.
+          </p>
+          <div className="mb-4 flex flex-wrap gap-2">
+            {(profile.skills || []).map((skill) => (
+              <span
+                key={skill}
+                className="inline-flex items-center gap-1 rounded-full bg-primary-50 px-3 py-1 text-sm text-primary-700"
+              >
+                {skill}
+                <button
+                  type="button"
+                  aria-label={`Remove ${skill}`}
+                  className="rounded-full hover:text-red-600"
+                  onClick={() =>
+                    handleChange(
+                      'skills',
+                      profile.skills.filter((item) => item !== skill)
+                    )
+                  }
+                >
+                  <X size={14} />
+                </button>
+              </span>
+            ))}
+            {!profile.skills?.length && (
+              <p className="text-sm text-gray-500">No skills added yet.</p>
+            )}
+          </div>
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <Input
+              label="Add skills"
+              value={skillInput}
+              onChange={(event) => {
+                setSkillInput(event.target.value)
+                setSkillInputError('')
+              }}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter') {
+                  event.preventDefault()
+                  addSkills()
+                }
+              }}
+              placeholder="e.g. Java, SQL, React"
+              error={skillInputError}
+              className="flex-1"
+            />
+            <Button
+              type="button"
+              variant="outline"
+              icon={Plus}
+              onClick={addSkills}
+              className="self-end"
+            >
+              Add
+            </Button>
+            <Button
+              type="button"
+              icon={Sparkles}
+              loading={extractingSkills}
+              onClick={handleExtractSkills}
+              className="self-end"
+            >
+              Extract from resume
+            </Button>
+          </div>
+          <p className="mt-2 text-xs text-gray-500">
+            AI suggestions can be incomplete. Review them and save only skills
+            that accurately describe your experience.
+          </p>
         </Card>
 
         <div className="flex justify-end gap-3">

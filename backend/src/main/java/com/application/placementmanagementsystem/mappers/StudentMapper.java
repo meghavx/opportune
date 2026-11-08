@@ -24,6 +24,7 @@ public class StudentMapper {
                 .graduationYear(student.getGraduationYear())
                 .cgpa(student.getCgpa())
                 .currentBacklogs(student.getCurrentBacklogs())
+                .skills(student.getSkills())
                 .build();
     }
 }

@@ -1,21 +1,45 @@
-# Opportune
+# Opportune: An AI-Powered Campus Placement Platform
 
-A full-stack web application designed to **centralize and streamline campus placement activities within an institution**. The system connects students, recruiters, placement administrators, and super administrators through a secure, role-based platform.
+![Java 21](assets/java-badge.svg)
+![Spring Boot](https://img.shields.io/badge/Spring_Boot-D1D5DB?style=flat&logo=springboot&logoColor=374151)
+![Maven](https://img.shields.io/badge/Maven-D1D5DB?style=flat&logo=apachemaven&logoColor=374151)
+![Python 3.12](https://img.shields.io/badge/Python_3.12-D1D5DB?style=flat&logo=python&logoColor=374151)
+![FastAPI](https://img.shields.io/badge/FastAPI-D1D5DB?style=flat&logo=fastapi&logoColor=374151)
+![Ollama](https://img.shields.io/badge/Ollama-D1D5DB?style=flat&logo=ollama&logoColor=374151)
+![MySQL](https://img.shields.io/badge/MySQL-D1D5DB?style=flat&logo=mysql&logoColor=374151)
+![React](https://img.shields.io/badge/React-D1D5DB?style=flat&logo=react&logoColor=374151)
+![Tailwind_CSS](https://img.shields.io/badge/Tailwind_CSS-D1D5DB?style=flat&logo=tailwindcss&logoColor=374151)
+![Vite](https://img.shields.io/badge/Vite-D1D5DB?style=flat&logo=vite&logoColor=374151)
+![Docker](https://img.shields.io/badge/Docker-D1D5DB?style=flat&logo=docker&logoColor=374151)
 
-It manages the placement lifecycle from student and recruiter management to placement drives, eligibility verification, applications, shortlisting, notifications, and placement reporting.
+**Opportune** is a full-stack campus placement management platform that brings students, recruiters, placement administrators, and super administrators together in one secure, role-based system. It simplifies placement activities with AI-powered job description parsing, resume skill extraction, and skill-based job matching.
 
-The system is designed with a **modular and scalable architecture**, allowing the platform to be extended with additional placement features and broader institutional deployment in the future.
-
-## Screenshots
+The platform covers the complete placement process, from managing students, recruiters, and placement drives to verifying eligibility, handling applications, shortlisting candidates, sending notifications, and tracking placement progress.
 
 <table>
   <tr>
     <td>
-      <img width="1440" height="812" alt="Landing Page" 
-        src="https://github.com/user-attachments/assets/ecbf260c-8e5b-40ce-82dd-5c0c95de3906" />
+      <img width="1440" height="812" alt="image" 
+        src="https://github.com/user-attachments/assets/ea4617d7-38d5-4375-bdff-f32899bbf855" />
+    </td>
+    <td>
+      <img width="1437" height="813" alt="image" 
+        src="https://github.com/user-attachments/assets/6c08ab55-4b3a-4d42-ba34-5008673a8310" />
     </td>
   </tr>
 </table>
+
+## Project Background
+
+Opportune began as a collaborative project for the **PG Certificate Programme in Advanced Computing (PGCP-AC) at C-DAC Bangalore**. This repository builds on the [original group project](https://github.com/meghavx/placement-management-system).
+
+This version extends the original platform with:
+
+* AI-assisted extraction of job details, eligibility criteria, and required skills from typed, pasted, or uploaded job descriptions
+* AI-assisted extraction of skills from student resumes, with review before saving to profiles
+* Opt-in skill matching for eligible drives, including matched skills and skill gaps
+* Viewable job-description documents for students, recruiters, and placement administrators
+* Updated eligibility rules and related interface improvements
 
 ## Features
 
@@ -23,7 +47,12 @@ The system is designed with a **modular and scalable architecture**, allowing th
 * Student profile and resume management
 * Company and recruiter management
 * Placement drive creation and management
-* Automated eligibility verification
+* PDF/DOCX job-description attachments viewable by students, recruiters, and placement administrators
+* AI-assisted extraction of drive details, eligibility criteria, and required skills from job descriptions
+* AI-assisted extraction of skills from student resumes, with student review before saving skills to their profiles
+* Automated eligibility verification using minimum CGPA, maximum backlogs, optional department restrictions, and minimum graduation year
+* Opt-in student job matching for eligible drives, with matched skills, missing skills, and match percentages
+* Resume viewing for recruiters and placement administrators in applicant and student details
 * Online applications and application tracking
 * Candidate shortlisting and recruitment status updates
 * Recruitment activity and interview scheduling
@@ -37,8 +66,10 @@ The system is designed with a **modular and scalable architecture**, allowing th
 | ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Super Admin**     | Manage Placement Admin, system settings, and audit logs                                                                                      |
 | **Placement Admin** | Manage students, recruiters, companies, monitor placement activities, and generate reports                                                            |
-| **Recruiter**       | Manage company placement drives and recruitment activities, define eligibility criteria for drives, review applicants, shortlist candidates, update recruitment status, and publish results |
-| **Student**         | Maintain profile, upload resume, view drives and eligibility status, apply to drives, and track applications                                          |
+| **Recruiter**       | Manage company placement drives and recruitment activities, attach job descriptions, define eligibility criteria, review applicants, shortlist candidates, update recruitment status, and publish results |
+| **Student**         | Maintain profile and skills, upload resume, review extracted skills and opt-in match suggestions, view job descriptions and eligibility status, apply to drives, and track applications |
+
+Job-skill matching compares the drive's listed required skills with the skills saved in the student's profile. Students opt in to see match results; results are shown only for eligible drives and are advisory, not part of the eligibility decision.
 
 
 ### Placement Drive Ownership
@@ -66,7 +97,7 @@ Placement Admin
                          ▼
                       Student
                          │
-                         ├── View Eligible Drives
+                         ├── Browse Open Drives and Check Eligibility
                          └── Apply
                                │
                                ▼
@@ -96,6 +127,12 @@ Placement Admin
 * JWT
 * Maven
 
+### AI Service
+
+* Python 3.12
+* FastAPI
+* Ollama (default model: `qwen2.5:3b`)
+
 ### Database
 
 * MySQL
@@ -110,7 +147,7 @@ Placement Admin
 
 ## Architecture
 
-The application follows a **three-tier layered architecture**:
+The application uses a layered architecture, with a separate AI service for extraction:
 
 ```text
 ┌──────────────────────────────┐
@@ -118,10 +155,10 @@ The application follows a **three-tier layered architecture**:
 │     React + Tailwind CSS     │
 └──────────────┬───────────────┘
                │ REST APIs
-┌──────────────▼───────────────┐
-│       Application Layer      │
-│ Spring Boot + Spring Security│
-│      Business Logic + JWT    │
+┌──────────────▼───────────────┐        ┌────────────────────────┐
+│       Application Layer      │ REST   │ AI Service             │
+│ Spring Boot + Spring Security│◄──────►│ FastAPI + Ollama       │
+│      Business Logic + JWT    │        └────────────────────────┘
 └──────────────┬───────────────┘
                │ JPA / Hibernate
 ┌──────────────▼───────────────┐
@@ -131,6 +168,8 @@ The application follows a **three-tier layered architecture**:
 ```
 
 The backend is organized using a **Controller → Service → Repository → Database** structure, with separate security, entity, exception-handling, and utility components.
+
+The AI service extracts structured suggestions from job descriptions and skills from resumes. Skill matching itself compares normalized skill names saved in the student's profile with the required skills on a drive.
 
 ## Database
 
@@ -147,6 +186,9 @@ Major entities include:
 * Recruitment Activities
 * Applications
 * Resumes
+* Student skills
+* Placement drive required skills
+* Placement drive JD documents
 * Notifications
 * Password Reset Tokens
 * Audit Logs
@@ -159,6 +201,8 @@ User ─────────────── Recruiter
 Company ──────────── Recruiters
 Company ──────────── Placement Drives
 Placement Drive ──── Eligibility Criteria
+Placement Drive ──── Required Skills
+Placement Drive ──── JD Document
 Placement Drive ──── Recruitment Activities
 Student ──────────── Applications
 Placement Drive ──── Applications
@@ -172,7 +216,7 @@ The schema uses primary keys, foreign keys, unique constraints, and normalized r
 ## Project Structure
 
 ```text
-placement-management-system/
+opportune/
 │
 ├── backend/
 │   ├── src/
@@ -181,6 +225,11 @@ placement-management-system/
 │   │       │   └── ...
 │   │       └── resources/
 │   └── pom.xml
+│
+├── ai-service/
+│   ├── main.py
+│   ├── jd_parser.py
+│   └── requirements.txt
 │
 ├── frontend/
 │   ├── src/
@@ -198,20 +247,21 @@ placement-management-system/
 
 Choose **one** of the following setup methods:
 
-- **Docker:** Compose runs MySQL, the backend, and the frontend. Follow the Docker steps only; skip the manual setup steps.
-- **Manual:** Run MySQL, the backend, and the frontend directly on your machine.
+- **Docker:** Compose runs MySQL, the backend, AI service, and frontend. Ollama runs on the host for AI extraction. Follow the Docker steps only; skip the manual setup steps.
+- **Manual:** Run MySQL, the backend, AI service, and frontend directly on your machine.
 
 ### Option A: Run with Docker
 
 #### Prerequisites
 
 * Docker Desktop or Docker Engine with the Docker Compose plugin
+* Ollama with the configured model available, if using AI-assisted extraction
 
 #### 1. Clone the repository and enter its directory:
 
 ```bash
-git clone <repository-url>
-cd placement-management-system
+git clone https://github.com/meghavx/opportune.git
+cd opportune
 ```
 
 #### 2. Create a local environment file and set the required values:
@@ -220,7 +270,9 @@ cd placement-management-system
 cp .env.example .env
 ```
 
-Set the database, email, JWT, and super-admin values in `.env`. 
+Set the database, email, JWT, and super-admin values in `.env`.
+
+Compose defaults to `OLLAMA_URL=http://host.docker.internal:11434` and `OLLAMA_MODEL=qwen2.5:3b`. Make sure Ollama is running on the host and the configured model is available. For the default model, run `ollama pull qwen2.5:3b`. To use another Ollama endpoint or model, add `OLLAMA_URL` or `OLLAMA_MODEL` to `.env`. The core application starts without Ollama, but AI extraction features require a reachable Ollama instance.
 
 #### 3. Build and start the application:
 
@@ -256,7 +308,7 @@ docker compose down
     SPRING_PROFILES_ACTIVE=demo docker compose up --build -d
     ```
 
-    The demo profile creates sample companies, recruiters, students, drives, eligibility criteria, applications, resumes, and recruitment activities. It creates missing demo records on startup and avoids duplicating existing ones.
+    The demo profile creates sample companies, recruiters, students with varied resume skills, drives with required skills and viewable job-description PDFs, eligibility criteria, applications, and recruitment activities. It creates missing demo records on startup and avoids duplicating existing ones.
 
 3. Demo Data:
     
@@ -289,13 +341,15 @@ docker compose down
 * Maven
 * Node.js and npm
 * MySQL
+* Python 3.12
+* Ollama with the configured model, if using AI-assisted extraction
 * Git
 
 #### 1. Clone the repository and enter its directory:
 
 ```bash
-git clone <repository-url>
-cd placement-management-system
+git clone https://github.com/meghavx/opportune.git
+cd opportune
 ```
 
 #### 2. Configure MySQL and backend environment
@@ -311,13 +365,7 @@ IDENTIFIED BY 'replace-with-a-local-password';
 GRANT ALL PRIVILEGES ON opportune.* TO 'opportune_user'@'localhost';
 ```
 
-From the repository root, copy the backend environment example:
-
-```bash
-cp backend/.env.example backend/.env
-```
-
-Edit `backend/.env` and set the database connection values:
+Use `backend/.env.example` as a reference and configure the database connection values in the environment used to launch Spring Boot:
 
 ```env
 DB_URL=jdbc:mysql://localhost:3306/opportune
@@ -325,9 +373,29 @@ DB_USERNAME=opportune_user
 DB_PASSWORD=replace-with-a-local-password
 ```
 
-Configure any other required values in `backend/.env`, including the JWT secret, super-admin credentials, and mail settings. Keep this file local; do not commit it.
+Configure the other required backend values, including the JWT secret, super-admin credentials, mail settings, and `AI_SERVICE_URL=http://localhost:8000`, in the same launch environment. Spring Boot does not load `.env` files automatically. For an IDE launch, add the values to its run configuration; for a terminal launch, export them in the shell. Keep actual credentials local and do not commit them.
 
-#### 3. Run the Backend
+#### 3. Start Ollama and the AI service
+
+Start Ollama and ensure the configured model is available. The AI service defaults to `http://localhost:11434` and `qwen2.5:3b`; set `OLLAMA_URL` or `OLLAMA_MODEL` in the environment if you use different settings. For the default model:
+
+```bash
+ollama pull qwen2.5:3b
+```
+
+In another terminal, install and start the AI service:
+
+```bash
+cd ai-service
+python3.12 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+fastapi run --host 0.0.0.0 --port 8000 main.py
+```
+
+On Windows, activate the environment with `.venv\Scripts\activate`. Keep Ollama and the AI service running while using AI extraction.
+
+#### 4. Run the Backend
 
 From the repository root, navigate to the backend directory:
 
@@ -342,7 +410,7 @@ Build and run the Spring Boot application:
 ./mvnw spring-boot:run
 ```
 
-#### 4. Run the Frontend
+#### 5. Run the Frontend
 
 In another terminal, from the repository root, navigate to the frontend directory:
 
@@ -364,22 +432,42 @@ When running the application, Swagger UI is available at:
 
 http://localhost:8080/swagger-ui/index.html
 
+## Screenshots
+
+<table>
+  <tr>
+    <td>
+      <img width="1438" height="813" alt="image" 
+        src="https://github.com/user-attachments/assets/f60adb96-9a43-4d69-8e4e-5bee30ba591c" />
+    </td>
+    <td>
+      <img width="1437" height="811" alt="image" src="https://github.com/user-attachments/assets/6109ddbf-8f66-4a99-b359-3d759ecde5c2" />
+    <td>
+      <img width="1439" height="814" alt="image" src="https://github.com/user-attachments/assets/a08a00b6-4e7b-4eba-9aae-94802dabf238" />
+    </td>
+    <td>
+      <img width="1436" height="810" alt="image" src="https://github.com/user-attachments/assets/82e48ae5-988e-4072-be0d-7f9b167bbc35" />
+    <td>
+      <img width="1438" height="811" alt="image" src="https://github.com/user-attachments/assets/33c4ceda-3a8a-4a82-af6f-2767b459482d" />
+    </td>
+  </tr>
+</table>
+
 ## Future Enhancements
 
 Potential future improvements include:
 
 * Multi-institution support
-* AI-based resume analysis and job recommendations
+* Advanced AI-based career guidance beyond the current skills-based job matching
 * Automated calendar-based interview scheduling
 * Advanced placement analytics
-* Mobile application
 * Integration with institutional ERP/SIS systems
 * Cloud deployment
 * Enhanced email/SMS notifications
 
-## Team
+## Project Credits
 
-Developed as a team project as part of the **PG Certificate Programme in Advanced Computing (PGCP-AC), C-DAC Bangalore**.
+The original project was developed as a group project as part of the **PG Certificate Programme in Advanced Computing (PGCP-AC) course at C-DAC Bangalore**. See the [original project repository](https://github.com/meghavx/placement-management-system).
 
 ## License
 

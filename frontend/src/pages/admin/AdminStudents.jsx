@@ -62,6 +62,7 @@ import {
   validateRequired,
 } from '../../utils/validators'
 import { DEPARTMENTS } from '../../constants/departments'
+import { openPdfPreview } from '../../utils/openPdfPreview'
 
 const EMPTY_FORM = {
   fullName: '',
@@ -103,6 +104,7 @@ export default function AdminStudents() {
   // Resume
   const [resumeDetails, setResumeDetails] = useState(null)
   const [resumeLoading, setResumeLoading] = useState(false)
+  const [resumeError, setResumeError] = useState(false)
 
   // Deactivate/Activate 
   const [statusStudent, setStatusStudent] = useState(null)
@@ -300,15 +302,19 @@ export default function AdminStudents() {
     setViewStudent(student)
 
     setResumeDetails(null)
+    setResumeError(false)
     setResumeLoading(true)
 
     try {
       const resume = await getStudentResume(student.studentId)
-      console.log('Student:', student)
-      console.log('Resume response:', resume)
       setResumeDetails(resume)
     } catch (error) {
       setResumeDetails(null)
+      if (error.response?.status !== 404) {
+        console.error('Failed to load student resume:', error)
+        setResumeError(true)
+        notify('Failed to load student resume.')
+      }
     } finally {
       setResumeLoading(false)
     }
@@ -318,19 +324,9 @@ export default function AdminStudents() {
     if (!viewStudent) return
 
     try {
-      const blob = await downloadStudentResume(viewStudent.studentId)
-
-      const url = window.URL.createObjectURL(blob)
-
-      window.open(url, '_blank', 'noopener,noreferrer')
-
-      // Cleanup after a minute
-      setTimeout(() => {
-        window.URL.revokeObjectURL(url)
-      }, 60000)
-
-    } catch {
-      notify('Failed to open resume')
+      await openPdfPreview(() => downloadStudentResume(viewStudent.studentId))
+    } catch (error) {
+      notify(error.message || 'Failed to open resume.')
     }
   }
 
@@ -351,10 +347,11 @@ export default function AdminStudents() {
       link.click()
       link.remove()
 
-      window.URL.revokeObjectURL(url)
+      window.setTimeout(() => window.URL.revokeObjectURL(url), 120_000)
 
-    } catch {
-      notify('Failed to download resume')
+    } catch (error) {
+      console.error('Failed to download student resume:', error)
+      notify('Failed to download resume.')
     }
   }
 
@@ -579,6 +576,7 @@ export default function AdminStudents() {
           onClose={() => {
             setViewStudent(null)
             setResumeDetails(null)
+            setResumeError(false)
           }}
           title="Student Details"
           size="lg"
@@ -721,6 +719,10 @@ export default function AdminStudents() {
 
                   </div>
 
+                ) : resumeError ? (
+                  <p className="text-sm text-red-600">
+                    Unable to load resume details.
+                  </p>
                 ) : (
 
                   <p className="text-sm text-gray-500">
@@ -1070,4 +1072,3 @@ export default function AdminStudents() {
     </div>
   )
 }
-

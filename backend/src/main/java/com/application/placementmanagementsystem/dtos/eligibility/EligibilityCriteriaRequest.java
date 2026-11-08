@@ -17,7 +17,6 @@ public class EligibilityCriteriaRequest {
     @DecimalMax(value = "10.00", message = "Minimum CGPA cannot exceed 10")
     private BigDecimal minCgpa;
 
-    @NotNull(message = "Department is required")
     private Department department;
 
     @NotNull(message = "Maximum backlogs is required")

@@ -9,7 +9,7 @@ profile avatar, and logout.
 
 Current Features:
 - Hamburger button toggles the Sidebar drawer on mobile
-- Displays "Welcome, <name>" and role label
+- Displays " <name>" and role label
 - Logout button
 
 Future:
@@ -53,7 +53,7 @@ export default function Navbar({ onToggleSidebar }) {
         </span>
         <div className="hidden text-right md:block">
           <p className="text-sm font-medium">
-            Welcome, {user?.fullName}
+            {user?.fullName}
           </p>
           <p className="text-xs text-primary-900">
             {ROLE_LABELS[role]}

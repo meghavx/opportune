@@ -159,6 +159,29 @@ export default function StudentProfile() {
 
     </Card>
 
+    <Card title="Skills used for job matching">
+      {profile.skills?.length ? (
+        <div className="flex flex-wrap gap-2">
+          {profile.skills.map((skill) => (
+            <span
+              key={skill}
+              className="rounded-full bg-primary-50 px-3 py-1 text-sm text-primary-700"
+            >
+              {skill}
+            </span>
+          ))}
+        </div>
+      ) : (
+        <p className="text-sm text-gray-500">
+          No skills added yet. Add them or extract suggestions from your resume
+          by editing your profile.
+        </p>
+      )}
+      <p className="mt-3 text-xs text-gray-500">
+        Skill matches are advisory and do not determine drive eligibility.
+      </p>
+    </Card>
+
         {/* ================= Academic Information ================= */}
 
     <Card title="Academic Information">

@@ -65,7 +65,11 @@ export default function Table({
                   {col.header}
                 </th>
               ))}
-              {actions && <th className="px-4 py-3 font-medium">Actions</th>}
+              {actions && (
+                <th className="whitespace-nowrap px-4 py-3 text-center font-medium">
+                  Actions
+                </th>
+              )}
             </tr>
           </thead>
           <tbody>
@@ -76,7 +80,11 @@ export default function Table({
                     {col.render ? col.render(row) : row[col.key]}
                   </td>
                 ))}
-                {actions && <td className="px-4 py-3">{actions(row)}</td>}
+                {actions && (
+                  <td className="whitespace-nowrap px-4 py-3 align-middle">
+                    {actions(row)}
+                  </td>
+                )}
               </tr>
             ))}
           </tbody>

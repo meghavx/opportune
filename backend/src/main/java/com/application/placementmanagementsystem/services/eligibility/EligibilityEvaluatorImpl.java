@@ -36,15 +36,16 @@ public class EligibilityEvaluatorImpl implements EligibilityEvaluator {
             );
         }
 
-        if (!student.getDepartment().equals(criteria.getDepartment())) {
+        if (criteria.getDepartment() != null
+                && !student.getDepartment().equals(criteria.getDepartment())) {
             reasons.add(
                     "Department is not eligible."
             );
         }
 
-        if (!student.getGraduationYear().equals(criteria.getGraduationYear())) {
+        if (student.getGraduationYear() < criteria.getGraduationYear()) {
             reasons.add(
-                    "Graduation year is not eligible."
+                    "Minimum graduation year required is " + criteria.getGraduationYear()
             );
         }
 

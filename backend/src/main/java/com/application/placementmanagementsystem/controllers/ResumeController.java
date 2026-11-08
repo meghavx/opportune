@@ -3,6 +3,7 @@ package com.application.placementmanagementsystem.controllers;
 import com.application.placementmanagementsystem.common.ApiResponse;
 import com.application.placementmanagementsystem.common.ResponseBuilder;
 import com.application.placementmanagementsystem.dtos.resume.ResumeResponse;
+import com.application.placementmanagementsystem.dtos.placementDrive.ResumeSkillExtractionResponse;
 import com.application.placementmanagementsystem.services.resume.ResumeService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -56,6 +57,16 @@ public class ResumeController {
                         "Resume fetched successfully",
                         response
                 )
+        );
+    }
+
+    @PostMapping("/student/profile/resume/extract-skills")
+    @PreAuthorize("hasRole('STUDENT')")
+    @Operation(summary = "Extract Skills from the Current Resume")
+    public ResponseEntity<ApiResponse<ResumeSkillExtractionResponse>> extractResumeSkills() {
+        ResumeSkillExtractionResponse response = resumeService.extractSkillsFromResume();
+        return ResponseEntity.ok(
+                ResponseBuilder.success("Resume skills extracted successfully", response)
         );
     }
 

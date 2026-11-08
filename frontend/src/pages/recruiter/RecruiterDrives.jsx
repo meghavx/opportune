@@ -19,7 +19,15 @@ GET /recruiter/drives, PUT /recruiter/drives/{id}, DELETE /recruiter/drives/{id}
 
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Plus, Eye, Pencil, ClipboardList  } from 'lucide-react'
+import {
+  Plus,
+  Eye,
+  FileText,
+  Pencil,
+  ClipboardList,
+  CircleX,
+  Ban,
+} from 'lucide-react'
 import PageHeader from '../../components/PageHeader'
 import SearchBar from '../../components/SearchBar'
 import FilterBar from '../../components/FilterBar'
@@ -38,6 +46,8 @@ import { useSearch } from '../../hooks/useSearch'
 import { useNotification } from '../../hooks/useNotification'
 import { formatDate } from '../../utils/formatDate'
 import { formatSalary } from '../../utils/formatSalary'
+import { getDriveJobDescriptionFile } from '../../services/driveService'
+import { openDocumentPreview } from '../../utils/openDocumentPreview'
 import { DRIVE_STATUS } from '../../constants/driveStatus'
 import { ROUTES } from '../../constants/routes'
 import {
@@ -51,6 +61,7 @@ export default function RecruiterDrives() {
   const [loading, setLoading] = useState(true)
   const [status, setStatus] = useState('')
   const [viewDrive, setViewDrive] = useState(null)
+  const [openingJd, setOpeningJd] = useState(false)
 
   const { searchTerm, setSearchTerm, filteredItems } = useSearch(drives, ['company', 'role'])
   const statusFiltered = status ? filteredItems.filter((d) => d.status === status) : filteredItems
@@ -129,6 +140,20 @@ export default function RecruiterDrives() {
     }
   }
 
+  const handleViewJd = async () => {
+    if (!viewDrive) return
+
+    setOpeningJd(true)
+    try {
+      await openDocumentPreview(() => getDriveJobDescriptionFile(viewDrive.id))
+    } catch (error) {
+      console.error(error)
+      notify(error.message || 'Failed to open the job description document.', 'error')
+    } finally {
+      setOpeningJd(false)
+    }
+  }
+
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
@@ -156,27 +181,33 @@ export default function RecruiterDrives() {
       ) : (
         <Table
           columns={[
-            { key: 'id', header: 'Drive ID' },
+            { key: 'id', header: <span className="whitespace-nowrap">Drive ID</span> },
             { key: 'company', header: 'Company' },
             { key: 'role', header: 'Role' },
-            { key: 'package', header: 'Package', render: (r) => formatSalary(r.package) },
+            {
+              key: 'package',
+              header: 'Package',
+              render: (r) => <span className="whitespace-nowrap">{formatSalary(r.package)}</span>,
+            },
             {
               key: 'driveDate',
               header: 'Drive Date',
-              render: (r) => formatDate(r.driveDate),
+              render: (r) => <span className="whitespace-nowrap">{formatDate(r.driveDate)}</span>,
             },
             {
               key: 'currentActivity',
               header: 'Current Activity',
               render: (row) =>
                 row.currentActivity ? (
-                  <Badge
-                    label={
-                      RECRUITMENT_ACTIVITY_LABELS[
-                        row.currentActivity.activityType
-                      ]
-                    }
-                  />
+                  <span className="whitespace-nowrap">
+                    <Badge
+                      label={
+                        RECRUITMENT_ACTIVITY_LABELS[
+                          row.currentActivity.activityType
+                        ]
+                      }
+                    />
+                  </span>
                 ) : (
                   <span className="text-xs text-gray-400">
                     Not Started
@@ -188,7 +219,7 @@ export default function RecruiterDrives() {
           rows={statusFiltered}
           emptyMessage="You have not created any placement drives yet."
           actions={(row) => (
-            <div className="flex flex-wrap gap-1">
+            <div className="flex flex-nowrap items-center gap-1">
               <Button
                 variant="ghost"
                 size="sm"
@@ -232,24 +263,24 @@ export default function RecruiterDrives() {
               {row.status === DRIVE_STATUS.OPEN && (
                 <>
                   <Button
-                    variant="outline"
+                    variant="ghost"
                     size="sm"
+                    icon={CircleX}
+                    ariaLabel="Close drive"
                     onClick={() =>
                       handleStatusChange(row, DRIVE_STATUS.CLOSED)
                     }
-                  >
-                    Close
-                  </Button>
+                  />
 
                   <Button
-                    variant="danger"
+                    variant="ghost"
                     size="sm"
+                    icon={Ban}
+                    ariaLabel="Cancel drive"
                     onClick={() =>
                       handleStatusChange(row, DRIVE_STATUS.CANCELLED)
                     }
-                  >
-                    Cancel
-                  </Button>
+                  />
                 </>
               )}
 
@@ -320,6 +351,25 @@ export default function RecruiterDrives() {
               {viewDrive.jobDescription}
             </p>
 
+            {viewDrive.jobDescriptionFileName && (
+              <div className="flex flex-col gap-3 rounded-lg border p-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex min-w-0 items-center gap-2">
+                  <FileText size={18} className="shrink-0" />
+                  <span className="break-all">{viewDrive.jobDescriptionFileName}</span>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  icon={FileText}
+                  loading={openingJd}
+                  onClick={handleViewJd}
+                >
+                  View JD document
+                </Button>
+              </div>
+            )}
+
             <hr className="my-2 border-gray-200" />
             <h3 className="text-base font-semibold text-gray-900">
               Eligibility Criteria
@@ -336,7 +386,7 @@ export default function RecruiterDrives() {
             </p>
 
             <p>
-              <span className="font-medium">Graduation Year:</span>{' '}
+              <span className="font-medium">Minimum Graduation Year:</span>{' '}
               {viewDrive.eligibility?.graduationYear}
             </p>
 
@@ -344,6 +394,19 @@ export default function RecruiterDrives() {
               <span className="font-medium">Maximum Backlogs:</span>{' '}
               {viewDrive.eligibility?.maxBacklogs}
             </p>
+
+            <div>
+              <p className="font-medium">Required Skills:</p>
+              {viewDrive.requiredSkills?.length ? (
+                <ul className="mt-1 list-disc space-y-1 pl-5">
+                  {viewDrive.requiredSkills.map((skill) => (
+                    <li key={skill}>{skill}</li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="mt-1">No required skills listed.</p>
+              )}
+            </div>
           </div>
         )}
       </Modal>

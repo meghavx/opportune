@@ -33,4 +33,12 @@ public class PlacementDriveSummaryResponse {
     private Boolean eligible;
 
     private List<String> ineligibilityReasons;
+
+    private Integer skillMatchPercentage;
+
+    private List<String> matchedSkills;
+
+    private List<String> missingSkills;
+
+    private String skillMatchNote;
 }

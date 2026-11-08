@@ -1,5 +1,18 @@
 services:
 
+  # FastAPI service that extracts job-description suggestions using host Ollama
+  ai-service:
+    build:
+      context: ./ai-service
+      dockerfile: Dockerfile
+    environment:
+      OLLAMA_URL: ${OLLAMA_URL:-http://host.docker.internal:11434}
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-qwen2.5:3b}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    ports:
+      - "127.0.0.1:8001:8000"
+
   # MySQL database used by the backend
   mysql:
     image: mysql:8.4
@@ -57,6 +70,7 @@ services:
       SUPER_ADMIN_PASSWORD: ${SUPER_ADMIN_PASSWORD:?Set SUPER_ADMIN_PASSWORD}
       MAIL_FROM: ${MAIL_FROM:-noreply@opportune.local}
       FRONTEND_URL: ${FRONTEND_URL:-http://localhost:5173}
+      AI_SERVICE_URL: http://ai-service:8000
       SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-default}
       DEMO_USER_PASSWORD: ${DEMO_USER_PASSWORD:-}
       

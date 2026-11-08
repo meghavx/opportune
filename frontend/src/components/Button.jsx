@@ -44,6 +44,7 @@ export default function Button({
   disabled = false,
   loading = false,
   icon: Icon = null,
+  ariaLabel,
   fullWidth = false,
   className = '',
 }) {
@@ -52,6 +53,7 @@ export default function Button({
       type={type}
       onClick={onClick}
       disabled={disabled || loading}
+      aria-label={ariaLabel}
       className={`inline-flex items-center justify-center gap-2 rounded-lg font-medium transition-colors
         disabled:opacity-50 disabled:cursor-not-allowed focus-visible:ring-2 focus-visible:ring-offset-1
         ${VARIANT_CLASSES[variant] || VARIANT_CLASSES.primary}

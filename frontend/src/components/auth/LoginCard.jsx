@@ -1,4 +1,3 @@
-
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { GraduationCap } from 'lucide-react'
@@ -56,7 +55,6 @@ export default function LoginCard() {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-
     setLoginError('')
 
     if (!validate()) return
@@ -64,17 +62,11 @@ export default function LoginCard() {
     setLoading(true)
 
     try {
-      const loggedInUser = await login(
-        username,
-        password,
-        role
-      )
-
+      const loggedInUser = await login(username, password, role)
       navigate(ROLE_HOME_ROUTE[loggedInUser.role])
     } catch (err) {
       setLoginError(
-        err.message ||
-        'Invalid email, password, or role selected.'
+        err.message || 'Invalid email, password, or role selected.'
       )
     } finally {
       setLoading(false)
@@ -82,28 +74,28 @@ export default function LoginCard() {
   }
 
   return (
-<div className="w-full max-w-md rounded-3xl border border-white/40 bg-[#FCFCFD]/90 backdrop-blur-xl p-10 shadow-[0_30px_80px_rgba(0,0,0,0.35)]">
+    <div className="relative w-full max-w-md overflow-hidden rounded-[1.6rem] border border-slate-200/80 bg-[#FCFCFD] px-7 py-8 shadow-[0_24px_70px_rgba(15,23,42,0.16)] sm:px-9 sm:py-9">
+      {/* Small accent at the top ties the card to Opportune's emerald theme. */}
+      <div className="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-emerald-300 via-[#42E886] to-teal-400" />
 
-      <div className="mb-6 flex flex-col items-center gap-2 text-center">
-        <span className="rounded-full bg-emerald-50 p-3 text-primary-600">
-          <GraduationCap size={28} />
+      <div className="mb-7 flex flex-col items-center gap-3 text-center">
+        <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600 ring-1 ring-emerald-100">
+          <GraduationCap size={29} strokeWidth={2} />
         </span>
 
-        <h1 className="text-xl font-semibold text-gray-900">
-          {APP_NAME}
-        </h1>
-
-        <p className="text-sm text-slate-500">
-          Sign in to continue
-        </p>
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900">
+            {APP_NAME}
+          </h1>
+          <p className="mt-1.5 text-sm text-slate-500">
+            Sign in to your placement workspace
+          </p>
+        </div>
       </div>
 
       {loginError && (
-        <div className="mb-4">
-          <Alert
-            type="error"
-            message={loginError}
-          />
+        <div className="mb-5">
+          <Alert type="error" message={loginError} />
         </div>
       )}
 
@@ -112,7 +104,6 @@ export default function LoginCard() {
         className="flex flex-col gap-4"
         noValidate
       >
-
         <Dropdown
           label="Role"
           value={role}
@@ -141,23 +132,24 @@ export default function LoginCard() {
           error={errors.password}
         />
 
-        <Button
-          type="submit"
-          loading={loading}
-          fullWidth
-          className="bg-[#42e886]! hover:bg-[#28d0ac]! text-white"
-        >
-          Log In
-        </Button>
+        <div className="pt-1">
+          <Button
+            type="submit"
+            loading={loading}
+            fullWidth
+            className="bg-[#42e886]! text-slate-950 shadow-[0_5px_16px_rgba(34,197,94,0.18)] transition duration-200 hover:-translate-y-0.5 hover:bg-[#31d978]! hover:shadow-[0_8px_20px_rgba(34,197,94,0.24)]"
+          >
+            Log In
+          </Button>
+        </div>
 
         <button
           type="button"
           onClick={() => navigate(ROUTES.FORGOT_PASSWORD)}
-          className="text-left text-sm text-primary-600 hover:underline"
+          className="self-start text-sm font-medium text-blue-600 transition-colors hover:text-blue-700 hover:underline focus:outline-none focus-visible:rounded focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
         >
           Forgot Password?
         </button>
-
       </form>
 
     </div>
